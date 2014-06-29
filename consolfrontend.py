@@ -1,4 +1,6 @@
 #Frontend for usage of Project Mimir in Terminal
+# MTF (MimirTerminalFrontend) v0.2.1 
+#2014, K. Schweiger
 import backend
 import os
 
@@ -10,7 +12,7 @@ def makestring(symbol, lengths):
 
 def banner():
     print makestring("-",132)
-    print makestring("-",55)+" Project Mimir v0.1.0 "+makestring("-",55)
+    print makestring("-",55)+" Project Mimir "+backend.getVersion()+" "+makestring("-",55)
     print makestring("-",132)
     print "-"+makestring(" ",130)+"-"
     print "-"+makestring(" ",5)+"Code | Name                 | Comments                                                                                       -"
@@ -28,7 +30,7 @@ def banner():
     print "-"+makestring(" ",5)+"  98 | Search for new Files | Search for new Files in a given directory and subirectorys and adds them as entrys             -"
     print "-"+makestring(" ",5)+"  99 | Save DB              | Saves the current database in a File                                                           -"
     print "-"+makestring(" ",130)+"-"
-  #  print "-"+makestring(" ",106)+"Created by K. Schweiger -"
+    print "-"+makestring(" ",119)+"MTF v0.1.1 -"
     print makestring("-",132)
 
 def execute(DB):
@@ -37,7 +39,7 @@ def execute(DB):
 
 
 
-def searchnewfiles():
+def searchnewfiles(DB):
     directory = raw_input('Input directory where database file is located:')
     DB.findnewfiles(directory)
 
@@ -63,7 +65,7 @@ def printaentry(DB):
 
 def modifyaentry(DB):
     print "Modifying Mode"
-    mode = int(raw_input('Mode? 1: Single entry, 2: Range of entrys '))
+    mode = int(raw_input('Mode? (1: Single entry, 2: Range of entrys, 3: List of entrys) '))
     if mode == 1:
         entryid = int(raw_input('Input ID of entry to modify: '))
         spec = raw_input('Input spec you whant to modify (Options: NAME, STUDIO, RATING,GENRE,INTERPRET): ')
@@ -74,9 +76,13 @@ def modifyaentry(DB):
             changehow = raw_input('How should the Spec be changed (Options: APPEND, NEW, CHANGE)? ')
             if changehow == "APPEND" or changehow == "NEW":
                 newspec = raw_input('Input the new value of the choosen spec: ')
+                if spec == "INTERPRET":
+                    newspec = newspec.replace(" ","%")
                 DB.modifyentry(spec, newspec, entryid, None, None, changehow)
             elif changehow == "CHANGE":
                 newspec = raw_input('Input the new value of the choosen spec: ')
+                if spec == "INTERPRET":
+                    newspec = newspec.replace(" ", "%")
                 listnum = int(raw_input('Input the index you what to change in the speclist: '))
                 DB.modifyentry(spec,newspec, entryid, None, listnum, changehow)
     elif mode == 2:
@@ -89,12 +95,45 @@ def modifyaentry(DB):
         elif spec == "GENRE" or spec == "INTERPRET":
             changehow = raw_input('How should the Spec be changed (Options: APPEND, NEW, CHANGE)? ')
             if changehow == "APPEND" or changehow == "NEW":
-                newspec = raw_input('Input the new value of the choosen spec: ')
+                newspec = raw_input('Input the new value for the choosen spec: ')
+                if spec == "INTERPRET":
+                    newspec = newspec.replace(" ", "%")
                 DB.modifyentry(spec, newspec, startid, endid, None, changehow)
+            elif changehow == "CHANGE":
+                newspec = raw_input('Input the new value for the choosen spec: ')
+                if spec == "INTERPRET":
+                    newspec = newspec.replace(" ", "%")
+                listnum = int(raw_input('Input the index you what to change in the speclist: '))
+                DB.modifyentry(spec,newspec, startid, endid, listnum, changehow)
+        else: 
+            raw_input('Wrong spec reference! Press any key to contionue')
+    elif mode == 3:
+        print "Input IDs. To stop type -1"
+        typedid = 0
+        idlist = []
+        while(typedid != -1):
+            typedid = int(raw_input('Input ID to be modifyed: '))
+            if typedid != -1:
+                idlist.append(typedid)
+        spec = raw_input('Input spec you whant to modify (Options: NAME, STUDIO, RATING,GENRE,INTERPRET): ')
+        if spec == "NAME" or spec == "STUDIO" or spec == "RATING":
+            newspec = raw_input('Input the new value of the choosen spec: ')
+            for ids in idlist:
+                DB.modifyentry(spec, newspec, ids)
+        elif spec == "GENRE" or spec == "INTERPRET":
+            changehow = raw_input('How should the Spec be changed (Options: APPEND, NEW)? ')
+            if changehow == "APPEND" or changehow == "NEW":
+                newspec = raw_input('Input the new value for the choosen spec: ')
+                if spec == "INTERPRET":
+                    newspec = newspec.replace(" ", "%")
+                for ids in idlist:
+                    DB.modifyentry(spec, newspec, ids, None, None, changehow)
+            """
             elif changehow == "CHANGE":
                 newspec = raw_input('Input the new value of the choosen spec: ')
                 listnum = int(raw_input('Input the index you what to change in the speclist: '))
-                DB.modifyentry(spec,newspec, startid, endid, listnum, changehow)
+                DB.modifyentry(spec,newspec, entryid, None, listnum, changehow)
+            """
     else:
         raw_input('Invalid Mode. Press key to continue')
 
@@ -109,8 +148,11 @@ def printbycriteria(DB):
         criteria = raw_input('Input criteria: ')
         criterialist.append(criteria)
     DB.printbycriteria(criterialist)
-    raw_input('Input anything to go on')
-
+    execflag = 1
+    while(execflag != 0):
+        execflag = int(raw_input('Input 0 to retun to mainmenu, Input 1 to execute something: '))
+        if execflag == 1:
+            execute(DB)
 
 
 def main():
@@ -147,7 +189,7 @@ def main():
             if Code == 4:
                 printbycriteria(DB)
             if Code == 98:
-                searchnewfiles()
+                searchnewfiles(DB)
             if Code == 99:
                 DB.saveDB()
             if Code == 0:

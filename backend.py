@@ -6,6 +6,9 @@ import sys
 import os
 from glob import glob
 
+def getVersion():
+    return "v0.1.1"
+
 
 class database:
     def __init__(self,flag,startdir):
@@ -45,7 +48,7 @@ class database:
     def getfiles(self, directory):
         self.files = []
         #self.datatypes =  ['*.txt', '*.dat']
-        self.datatypes =  ['*.mp4', '*.wmv','*.avi','*.mov','*.mpg','*.mp7','*.flv']
+        self.datatypes =  ['*.mp4', '*.wmv','*.avi','*.mov','*.mpg','*.mp7','*.flv','*.mkv','*.f4v','*.mpeg']
         for types in self.datatypes:
             for f in glob(os.path.join(directory, types)):
             #self.files.append(os.path.splitext(os.path.basename(f))[0])
@@ -110,8 +113,10 @@ class database:
                     if genres == criteria:
                         self.flag = True
                 for interprets in self.entrys[i].getSpec("INTERPRET"):
-                    if interprets == criteria:
-                        self.flag = True
+                    self.names = interprets.split("%")
+                    for name in self.names:
+                        if name == criteria:
+                            self.flag = True
                 if self.entrys[i].getSpec("STUDIO") == criteria:
                     self.flag = True
                 self.toprint.append(self.flag)
@@ -138,9 +143,9 @@ class database:
           if self.existflag == False:
               print foundfile
               self.id = len(self.entrys) 
-              self.entrys.append(entry(None,self.id,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "genre","interpret"))
+              self.entrys.append(entry(None,self.id,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "genre","interpret","nostudio","notrated"))
     def runentry(self, entryid):
-        os.system("vlc "+str(self.entrys[entryid].getSpec("PATH"))+ " &") 
+        os.system("vlc "+str(self.entrys[entryid].getSpec("PATH"))) 
 
 
 class entry:
@@ -184,7 +189,7 @@ class entry:
                 return True
             elif how == "NEW":
                 self.genre = []
-                self.genre.appen(newSpec)
+                self.genre.append(newSpec)
                 return True
             elif how == "CHANGE":
                 if listnum < len(self.genre):
@@ -198,7 +203,7 @@ class entry:
                 return  False    
         elif what == "INTERPRET":
             if how == "APPEND":
-                self.interpret.appen(newSpec)
+                self.interpret.append(newSpec)
                 return True
             elif how == "NEW":
                 self.interpret = []
@@ -259,7 +264,7 @@ class entry:
         #self.entrylist = [str(self.__id),self.name,self.__path,self.genre,self.interpret]
         return self.entrylist
     def printentry(self):
-        print self.__id,self.name,self.__path,' '.join(self.genre),' '.join(self.interpret),self.studio
+        print self.__id,self.name,' '.join(self.genre),(' '.join(self.interpret)).replace("%"," "),self.studio
 
 def main():
     DB1 = database(1,sys.argv[1])
