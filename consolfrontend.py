@@ -23,6 +23,7 @@ def banner():
     print "-"+makestring(" ",10)+    " "+makestring(" ",22)+"| can Append and Modify Elements or overwrite the list                                           -"
     print "-"+makestring(" ",5)+"   3 | Print Information    | Prints the informations of a given entry (Input: ID)                                           -"
     print "-"+makestring(" ",5)+"   4 | Print by Criteria    | Input a list of criterias and all matching entrys are printed                                  -"
+    print "-"+makestring(" ",5)+"   5 | Statistics           | Choose between different statistics                                                            -"
     print "-"+makestring(" ",5)+"  42 | Help                 | Get a few informations and help                                                                -"
     print "-"+makestring(" ",5)+"  96 | Create new DB        | Create a new Database. From the starting directory, files matching a list of datatypes are     -"
     print "-"+makestring(" ",10)+    " "+makestring(" ",22)+"| added as entrys to the database                                                                -"
@@ -30,7 +31,7 @@ def banner():
     print "-"+makestring(" ",5)+"  98 | Search for new Files | Search for new Files in a given directory and subirectorys and adds them as entrys             -"
     print "-"+makestring(" ",5)+"  99 | Save DB              | Saves the current database in a File                                                           -"
     print "-"+makestring(" ",130)+"-"
-    print "-"+makestring(" ",119)+"MTF v0.1.1 -"
+    print "-"+makestring(" ",119)+"MTF v0.1.2 -"
     print makestring("-",132)
 
 def execute(DB):
@@ -155,6 +156,121 @@ def printbycriteria(DB):
             execute(DB)
 
 
+def statisticsmode(DB):
+    numofentrys = DB.getnumberofentrys()
+    os.system("clear")
+    print makestring("-",132)
+    print makestring("-",55)+" Project Mimir "+backend.getVersion()+" "+makestring("-",55)
+    print makestring("-",132)
+    print "-"+makestring(" ",5)+"Total number of entrys: "+str(numofentrys)
+    print "-"+makestring(" ",130)+"-"
+    genrelist = []
+    genrenumlist = []
+    interpretlist = []
+    interpretnumlist = []
+    studiolist = []
+    studionumlist = []
+    ratinglist = []
+    ratingnumlist = []
+    
+    for i in range(0,numofentrys):
+        tmpgenre = DB.entrys[i].getSpec("GENRE")
+        for genre in tmpgenre:
+            flag = True
+            jasnum = 0
+            for j in genrelist:
+                if j == genre:
+                    flag = False
+                    rememberindex = jasnum
+                jasnum = jasnum + 1
+            if flag == True:
+                genrelist.append(genre)
+                genrenumlist.append(int(1))
+            if flag == False:
+                genrenumlist[rememberindex] = genrenumlist[rememberindex] + 1
+        tmpinterpret = DB.entrys[i].getSpec("INTERPRET")
+        for interpret in tmpinterpret:
+            flag = True
+            jasnum = 0
+            for j in interpretlist:
+                if j == interpret:
+                    flag = False
+                    rememberindex = jasnum
+                jasnum = jasnum + 1
+            if flag == True:
+                interpretlist.append(interpret)
+                interpretnumlist.append(int(1))
+            if flag == False:
+                interpretnumlist[rememberindex] = interpretnumlist[rememberindex] + 1
+        studio = DB.entrys[i].getSpec("STUDIO")
+        flag = True
+        jasnum = 0
+        for j in studiolist:
+            if j == studio:
+                flag = False
+                rememberindex = jasnum
+            jasnum = jasnum + 1
+        if flag == True:
+            studiolist.append(studio)
+            studionumlist.append(int(1))
+        if flag == False:
+            studionumlist[rememberindex] = studionumlist[rememberindex] + 1
+        rating = DB.entrys[i].getSpec("RATING")
+        flag = True
+        jasnum = 0
+        for j in ratinglist:
+            if j == rating:
+                flag = False
+                rememberindex = jasnum
+            jasnum = jasnum + 1
+        if flag == True:
+            ratinglist.append(rating)
+            ratingnumlist.append(int(1))
+        if flag == False:
+            ratingnumlist[rememberindex] = ratingnumlist[rememberindex] + 1
+    maxlen = 0
+    for i in genrelist:
+        if len(i) >= maxlen:
+            maxlen = len(i)
+    for i in range(len(genrelist)):
+        emptyspace = maxlen - len(genrelist[i])
+        print "-"+makestring(" ",5)+genrelist[i]+makestring(" ",emptyspace)+" | "+str(genrenumlist[i])
+    print "-"+makestring(" ",130)+"-"
+    print "-"+makestring(" ",130)+"-"
+    maxlen = 0
+    for i in interpretlist:
+        if len(i) >= maxlen:
+            maxlen = len(i)
+    for i in range(len(interpretlist)):
+        emptyspace = maxlen - len(interpretlist[i])
+        print "-"+makestring(" ",5)+interpretlist[i].replace("%"," ")+makestring(" ",emptyspace)+" | "+str(interpretnumlist[i])
+    print "-"+makestring(" ",130)+"-"
+    print "-"+makestring(" ",130)+"-"
+    maxlen = 0
+    for i in studiolist:
+        if len(i) >= maxlen:
+            maxlen = len(i)
+    for i in range(len(studiolist)):
+        emptyspace = maxlen - len(studiolist[i])
+        print "-"+makestring(" ",5)+studiolist[i].replace("%"," ")+makestring(" ",emptyspace)+" | "+str(studionumlist[i])
+    print "-"+makestring(" ",130)+"-"
+    print "-"+makestring(" ",130)+"-"
+    maxlen = 0
+    for i in ratinglist:
+        if len(i) >= maxlen:
+            maxlen = len(i)
+    for i in range(len(ratinglist)):
+        emptyspace = maxlen - len(ratinglist[i])
+        print "-"+makestring(" ",5)+ratinglist[i].replace("%"," ")+makestring(" ",emptyspace)+" | "+str(ratingnumlist[i])
+   #print genrelist,genrenumlist
+   #print interpretlist, interpretnumlist
+   #print studiolist, studionumlist
+   #print ratinglist, ratingnumlist
+    raw_input('press anything')
+    
+
+
+
 def main():
     os.system("resize -s 43 132")
     Code = 999
@@ -188,6 +304,8 @@ def main():
                 printaentry(DB)
             if Code == 4:
                 printbycriteria(DB)
+            if Code == 5:
+                statisticsmode(DB)
             if Code == 98:
                 searchnewfiles(DB)
             if Code == 99:

@@ -146,7 +146,9 @@ class database:
               self.entrys.append(entry(None,self.id,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "genre","interpret","nostudio","notrated"))
     def runentry(self, entryid):
         os.system("vlc "+str(self.entrys[entryid].getSpec("PATH"))) 
-
+    def getnumberofentrys(self):
+        return len(self.entrys)
+        
 
 class entry:
     def __init__(self, specs, id=None, name=None, path=None, genre=None, interpret=None, studio=None, rating=None):
@@ -268,10 +270,10 @@ class entry:
 
 def main():
     DB1 = database(1,sys.argv[1])
-    for i in range(len(DB1.entrys)): 
-        DB1.entrys[i].printentry()
-    DB1.printbycriteria(["genre1","interpret1"])
-    print "HALLO"
+    #for i in range(len(DB1.entrys)): 
+    #    DB1.entrys[i].printentry()
+    #DB1.printbycriteria(["genre1","interpret1"])
+    #print "HALLO"
     #DB1.runentry(0)
     #DB1.findnewfiles(sys.argv[1])
     #print DB1.entrys[0].getSpec("GENRE")
@@ -282,8 +284,8 @@ def main():
     #print "\n"
     #for i in range(len(DB1.entrys)):
     #    DB1.entrys[i].printentry()
-    DB1.saveDB() 
-
+    #DB1.saveDB() 
+    #print DB1.getnumberofentrys()
 
 if __name__ == '__main__':
     main()
