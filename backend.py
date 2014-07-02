@@ -7,12 +7,14 @@ import os
 from glob import glob
 
 def getVersion():
-    return "v0.1.1"
+    return "v0.2.0"
 
 
 class database:
     def __init__(self,flag,startdir):
         self.entrys = []
+        self.openids = False
+        self.rootdir = startdir
         if flag == 0:
             print "A new DataBase will be created"
             #methode zum einlesen aller datein im Ordner aufrufen
@@ -54,6 +56,31 @@ class database:
             #self.files.append(os.path.splitext(os.path.basename(f))[0])
                 self.files.append(f)
         return sorted(self.files)
+    def removeentrys(self):
+        removelist = []
+        self.lastid = len(self.entrys)
+        for i in range(self.lastid):
+                try :
+                    open(self.entrys[i].getSpec("PATH"))
+                except IOError:
+                    removelist.append(self.entrys[i].getSpec("ID"))
+        #print removelist
+        self.tmp = 0
+        for j in removelist:
+            del self.entrys[int(j)-self.tmp]
+            self.tmp = self.tmp + 1
+        #for i in range(len(self.entrys)):
+        #    self.entrys[i].printentry()
+        self.newfile = self.findnewfiles(self.rootdir)
+        if self.newfile == False:
+            #print "move"
+            for j in range(len(self.entrys)):
+                if j != int(self.entrys[j].getSpec("ID")):
+                    #print "moved", j
+                    self.entrys[-1].changeSpec("ID", j)
+                    self.entrys.insert(j, self.entrys[-1])
+                    del self.entrys[-1]
+                    
     #Read the Database file and returns a list of the lines in the file
     def readDB(self, directory):
         print "ReadDB"
@@ -83,7 +110,7 @@ class database:
             while(self.index <= self.endindex):
                 self.entrys[self.index].changeSpec(changewhat,change)
                 self.index = self.index + 1
-            print self.entrys[0].name
+            #print self.entrys[0].name
         else:
             if endid is None:
                 self.endindex = self.index
@@ -129,21 +156,38 @@ class database:
             if self.printflag == True:
                 self.entrys[i].printentry()
     def findnewfiles(self, startdir):
-      self.dirs = self.dirfinder(startdir)
-      #filelist contains the paths to the files
-      self.filelist = []
-      for d in self.dirs:
-          self.filelist = self.filelist + self.getfiles(d)
-      for foundfile in self.filelist:
-          self.existflag = False
-          for i in range(len(self.entrys)):
-              #print self.entrys[i].getSpec("PATH")
-              if self.entrys[i].getSpec("PATH") == foundfile:
-                  self.existflag = True
-          if self.existflag == False:
-              print foundfile
-              self.id = len(self.entrys) 
-              self.entrys.append(entry(None,self.id,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "genre","interpret","nostudio","notrated"))
+        self.dirs = self.dirfinder(startdir)
+        self.insertedflag = False
+        #filelist contains the paths to the files
+        self.filelist = []
+        for d in self.dirs:
+            self.filelist = self.filelist + self.getfiles(d)
+        print self.filelist
+        print " "
+        for foundfile in self.filelist:
+            self.existflag = False
+            for i in range(len(self.entrys)):
+                #print len(self.entrys)
+                #print self.entrys[i].getSpec("PATH")
+                if self.entrys[i].getSpec("PATH") == foundfile:
+                    #print self.entrys[i].getSpec("NAME")
+                    self.existflag = True
+            if self.existflag == False:
+                print "foundfile",foundfile
+                self.insertedflag = False
+                for i in range(len(self.entrys)):
+                    if i != int(self.entrys[i].getSpec("ID")):
+                        print i, self.entrys[i].getSpec("ID")
+                        self.entrys.insert(i, entry(None,i,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "genre","interpret","nostudio","notrated"))
+                        self.insertedflag = True
+                        break
+                if self.insertedflag == False:
+                    self.id = len(self.entrys) 
+                    self.entrys.append(entry(None,self.id,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "genre","interpret","nostudio","notrated"))
+                    self.insertedflag = False
+                    print "anhaengen",self.id
+#                return self.insertedflag
+        return self.insertedflag
     def runentry(self, entryid):
         os.system("vlc "+str(self.entrys[entryid].getSpec("PATH"))) 
     def getnumberofentrys(self):
@@ -151,13 +195,13 @@ class database:
         
 
 class entry:
-    def __init__(self, specs, id=None, name=None, path=None, genre=None, interpret=None, studio=None, rating=None):
+    def __init__(self, specs, ID=None, name=None, path=None, genre=None, interpret=None, studio=None, rating=None):
         if specs is None:
             self.genre = []
             self.interpret = []
-            self.__id=id
+            self.id=ID
             self.name=name
-            self.__path=path
+            self.path=path
             self.genre.append(genre)
             self.interpret.append(interpret)
             self.studio=studio
@@ -168,11 +212,11 @@ class entry:
             for num in specs:
                 self.spec = num.split('$')
                 if self.spec[0] == "ID":
-                    self.__id = self.spec[1]
+                    self.id = self.spec[1]
                 if self.spec[0] == "NAME":
                     self.name = self.spec[1]
                 if self.spec[0] == "PATH":
-                    self.__path = self.spec[1]
+                    self.path = self.spec[1]
                 if self.spec[0] == "GENRE":
                     self.genre.append(self.spec[1])
                 if self.spec[0] == "INTERPRET":
@@ -182,8 +226,14 @@ class entry:
                 if self.spec[0] == "RATING":
                     self.rating = self.spec[1]
     def changeSpec(self, what, newSpec, how = None, listnum = None):
+        if what == "ID":
+            self.id = newSpec
+            return True
         if what == "NAME":
             self.name = newSpec
+            return True
+        if what == "PATH":
+            self.path = newSpec
             return True
         elif what == "GENRE":
             if how == "APPEND":
@@ -232,11 +282,11 @@ class entry:
             return False
     def getSpec(self, what):
         if what == "ID$" or what == "ID":
-            return self.__id
+            return self.id
         if what == "NAME$" or what == "NAME":
             return self.name
         if what == "PATH$" or  what =="PATH":
-            return self.__path
+            return self.path
         if what == "GENRE$" or  what == "GENRE":
             return self.genre
         if what == "INTERPRET$" or what == "INTERPRET":
@@ -266,26 +316,16 @@ class entry:
         #self.entrylist = [str(self.__id),self.name,self.__path,self.genre,self.interpret]
         return self.entrylist
     def printentry(self):
-        print self.__id,self.name,' '.join(self.genre),(' '.join(self.interpret)).replace("%"," "),self.studio
+        print self.id,self.name,self.path,' '.join(self.genre),(' '.join(self.interpret)).replace("%"," "),self.studio
 
 def main():
-    DB1 = database(1,sys.argv[1])
-    #for i in range(len(DB1.entrys)): 
-    #    DB1.entrys[i].printentry()
-    #DB1.printbycriteria(["genre1","interpret1"])
-    #print "HALLO"
-    #DB1.runentry(0)
-    #DB1.findnewfiles(sys.argv[1])
-    #print DB1.entrys[0].getSpec("GENRE")
-    #DB1.printbyGenre("genre1")
-#    for i in range(len(DB1.entrys)): 
- #       DB1.entrys[i].printentry()
-    #DB1.entrys[2].changegenre("GENRE",0,0)
-    #print "\n"
-    #for i in range(len(DB1.entrys)):
-    #    DB1.entrys[i].printentry()
-    #DB1.saveDB() 
-    #print DB1.getnumberofentrys()
+    DB1 = database(0,sys.argv[1])
+    for i in range(len(DB1.entrys)): 
+        DB1.entrys[i].printentry()
+    raw_input('taste druecken')
+    DB1.removeentrys()
+    for i in range(len(DB1.entrys)): 
+        DB1.entrys[i].printentry()
 
 if __name__ == '__main__':
     main()
