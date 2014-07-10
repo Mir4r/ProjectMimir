@@ -10,7 +10,7 @@ def makestring(symbol, lengths):
         string = string + symbol
     return string
 
-def banner():
+def banner(database):
     print makestring("-",132)
     print makestring("-",55)+" Project Mimir "+backend.getVersion()+" "+makestring("-",55)
     print makestring("-",132)
@@ -32,13 +32,26 @@ def banner():
     print "-"+makestring(" ",5)+"  98 | Search for new Files | Search for new Files in a given directory and subirectorys and adds them as entrys             -"
     print "-"+makestring(" ",5)+"  99 | Save DB              | Saves the current database in a File                                                           -"
     print "-"+makestring(" ",130)+"-"
-    print "-"+makestring(" ",119)+"MTF v0.1.3 -"
+    print "- "+str(database)+makestring(" ",118-len(database))+"MTF v0.1.4 -"
     print makestring("-",132)
+
+def intinput(string):
+    flag = False
+    while flag == False:
+        try:
+            input = int(raw_input(string))
+            flag = True
+        except ValueError:
+            print "The input requires to be an integer"
+            flag = False
+    return input
+
+
 
 def execute(DB):
     idtoexecute = int(raw_input('Input ID of entry, to be executer: '))
     DB.runentry(idtoexecute)
-
+    
 
 
 def searchnewfiles(DB):
@@ -49,12 +62,12 @@ def searchnewfiles(DB):
 
 def printaentry(DB):
     print "Printing Mode"
-    mode = raw_input('Mode? 1: Single entry, 2: Range of entrys ')
-    if mode == "1":
+    mode = intinput('Mode? 1: Single entry, 2: Range of entrys ')
+    if mode == 1:
         idtoshow = int(raw_input('Input  ID: '))
         DB.entrys[idtoshow].printentry()
         #raw_input('Input anything to go on')
-    elif mode == "2":
+    elif mode == 2:
         startid = int(raw_input('Input first ID of range: '))
         endid = int(raw_input('Input last ID of range: '))
         for i in range(startid, endid+1):
@@ -63,22 +76,27 @@ def printaentry(DB):
     else:
         raw_input('Invalid Mode. Press key to continue')
     execflag = 1
-    while(execflag != "0"):
-        execflag = raw_input('Input Code (0 to go to mainmenu): ')
-        if execflag == "1":
+    flag = True
+    while(execflag != 0):
+        execflag = intinput('Input Code (0 to go to mainmenu): ')
+        if execflag == 1:
             execute(DB)
-        if execflag == "2":
+        if execflag == 2:
             modifyaentry(DB)
-        if execflag == "3":
-            printaentry(DB)
-        if execflag == "4":
+        if execflag == 3:
+            flag = printaentry(DB)
+        if execflag == 4:
             printbycriteria(DB)
+        if execflag == 0:
+            return False
+        if flag == False:
+            break
 
 def modifyaentry(DB):
     print "Modifying Mode"
-    mode = raw_input('Mode? (1: Single entry, 2: Range of entrys, 3: List of entrys) ')
-    if mode == "1":
-        entryid = int(raw_input('Input ID of entry to modify: '))
+    mode = intinput('Mode? (1: Single entry, 2: Range of entrys, 3: List of entrys) ')
+    if mode == 1:
+        entryid = intinput('Input ID of entry to modify: ')
         spec = raw_input('Input spec you whant to modify (Options: NAME, STUDIO, RATING,GENRE,INTERPRET): ')
         if spec == "NAME" or spec == "STUDIO" or spec == "RATING":
             newspec = raw_input('Input the new value of the choosen spec: ')
@@ -94,11 +112,11 @@ def modifyaentry(DB):
                 newspec = raw_input('Input the new value of the choosen spec: ')
                 if spec == "INTERPRET":
                     newspec = newspec.replace(" ", "%")
-                listnum = int(raw_input('Input the index you what to change in the speclist: '))
+                listnum = intinput('Input the index you what to change in the speclist: ')
                 DB.modifyentry(spec,newspec, entryid, None, listnum, changehow)
-    elif mode == "2":
-        startid = int(raw_input('Input ID of first entry to modify: '))
-        endid = int(raw_input('Input ID of last entry to modify: '))
+    elif mode == 2:
+        startid = intinput('Input ID of first entry to modify: ')
+        endid = intinput('Input ID of last entry to modify: ')
         spec = raw_input('Input spec you whant to modify (Options: NAME, STUDIO, RATING,GENRE,INTERPRET): ')
         if spec == "NAME" or spec == "STUDIO" or spec == "RATING":
             submode = raw_input('0: Change for all, 1: Ask for every entry ')
@@ -114,8 +132,8 @@ def modifyaentry(DB):
             #newspec = raw_input('Input the new value of the choosen spec: ')
             #DB.modifyentry(spec, newspec, startid, endid )
         elif spec == "GENRE" or spec == "INTERPRET":
-            submode = raw_input('0: Change for all, 1: Ask for every entry ')
-            if submode == "0":
+            submode = intinput('0: Change for all, 1: Ask for every entry ')
+            if submode == 0:
                 changehow = raw_input('How should the spec be changed (Options: APPEND, NEW, CHANGE)? ')
                 if changehow == "APPEND" or changehow == "NEW":
                     newspec = raw_input('Input the new value for the choosen spec: ')
@@ -127,14 +145,14 @@ def modifyaentry(DB):
                     newspec = raw_input('Input the new value for the choosen spec: ')
                     if spec == "INTERPRET":
                         newspec = newspec.replace(" ", "%")
-                    listnum = int(raw_input('Input the index you what to change in the speclist: '))
+                    listnum = intinput('Input the index you what to change in the speclist: ')
                     for i in range(startid, endid+1):
                         DB.modifyentry(spec,newspec, i, None, listnum, changehow)
                 else: 
                     raw_input('Wrong spec reference! Press any key to contionue')
-            if submode == "1":
-                subsubmode = raw_input('Should the spec always be changes in the same way?0: Yes, 1: No' )
-                if subsubmode == "0":
+            elif submode == 1:
+                subsubmode = intinput('Should the spec always be changes in the same way?0: Yes, 1: No' )
+                if subsubmode == 0:
                     changehow = raw_input('How should the spec be changed (Options: APPEND, NEW, CHANGE)? ')
                     if changehow == "APPEND" or changehow == "NEW":
                         for i in range(startid, endid+1):
@@ -144,7 +162,7 @@ def modifyaentry(DB):
                                 newspec = newspec.replace(" ", "%")
                             DB.modifyentry(spec, newspec, i, None, None, changehow)
                     elif changehow == "CHANGE":
-                        listnum = int(raw_input('Input the index you what to change in the speclist: '))
+                        listnum = intinput('Input the index you what to change in the speclist: ')
                         for i in range(startid, endid+1):
                             DB.entrys[i].printentry()
                             newspec = raw_input('Input the new value for the choosen spec: ')
@@ -153,7 +171,7 @@ def modifyaentry(DB):
                             DB.modifyentry(spec,newspec, startid, endid, listnum, changehow)
                     else: 
                         raw_input('Wrong spec reference! Press any key to contionue')
-                if subsubmode == "1":
+                elif subsubmode == 1:
                     for i in range(startid, endid+1):
                         DB.entrys[i].printentry()
                         changehow = raw_input('How should the spec be changed (Options: APPEND, NEW, CHANGE)? ')
@@ -166,16 +184,16 @@ def modifyaentry(DB):
                             newspec = raw_input('Input the new value for the choosen spec: ')
                             if spec == "INTERPRET":
                                 newspec = newspec.replace(" ", "%")
-                            listnum = int(raw_input('Input the index you what to change in the speclist: '))
+                            listnum = intinput('Input the index you what to change in the speclist: ')
                             DB.modifyentry(spec,newspec, startid, endid, listnum, changehow)
                         else: 
                             raw_input('Wrong spec reference! Press any key to contionue')
-    elif mode == "3":
+    elif mode == 3:
         print "Input IDs. To stop type -1"
         typedid = 0
         idlist = []
         while(typedid != -1):
-            typedid = int(raw_input('Input ID to be modifyed: '))
+            typedid = intinput('Input ID to be modifyed: ')
             if typedid != -1:
                 idlist.append(typedid)
         spec = raw_input('Input spec you whant to modify (Options: NAME, STUDIO, RATING,GENRE,INTERPRET): ')
@@ -222,7 +240,7 @@ def modifyaentry(DB):
 
 def printbycriteria(DB):
     print "Print by Criteria"
-    criterianum = int(raw_input('Input the number of criteria: '))
+    criterianum = intinput('Input the number of criteria: ')
     criterialist = []
     for i in range(0,criterianum):
         print i+1,"of",criterianum
@@ -230,21 +248,42 @@ def printbycriteria(DB):
         criterialist.append(criteria)
     DB.printbycriteria(criterialist)
     execflag = 1
+    flag = True
     while(execflag != 0):
-        execflag = int(raw_input('Input Code (0 to go to mainmenu): '))
+        execflag = intinput('Input Code (0 to go to mainmenu): ')
         if execflag == 1:
             execute(DB)
         if execflag == 2:
             modifyaentry(DB)
         if execflag == 3:
-            printaentry(DB)
+            flag = printaentry(DB)
         if execflag == 4:
             printbycriteria(DB)
+        if execflag == 0:
+            return False
+        if flag == False:
+            break
 
 def removeentrys(DB):
     print "Seaching for noexisting Files in the Database and searches for new Files in the filesystem."
     DB.removeentrys()
-    raw_input('Press key to go on')        
+    DB.removeentrys()
+    execflag = 1
+    flag = True
+    while(execflag != 0):
+        execflag = intinput('Input Code (0 to go to mainmenu): ')
+        if execflag == 1:
+            execute(DB)
+        if execflag == 2:
+            modifyaentry(DB)
+        if execflag == 3:
+            flag = printaentry(DB)
+        if execflag == 4:
+            printbycriteria(DB)
+        if execflag == 0:
+            return False
+        if flag == False:
+            break
 
 def statisticsmode(DB):
     numofentrys = DB.getnumberofentrys()
@@ -365,10 +404,12 @@ def main():
     os.system("resize -s 43 132")
     Code = 999
     DBexists = False
+    ignore = False
+    directory = ""
     while(Code != 0):
         os.system("clear")
-        banner()
-        Code = int(raw_input('Input Code: '))
+        banner(directory)
+        Code = intinput('Input Code: ')
         if Code == 95:
             if DBexists == False:
                 directory = raw_input('Input starting directory:')
@@ -379,9 +420,14 @@ def main():
                 raw_input('Input anything to go on')
         elif Code == 96:
             if DBexists == False:
+                ignore = False
                 directory = raw_input('Input directory where database file is located: ')
                 DB = backend.database(1,directory)
-                DBexists = True
+                if DB.worked == False:
+                    raw_input("Please press a key")
+                    ignore = True
+                else:
+                    DBexists = True
             else:
                 print "There is already a Database" 
                 raw_input('Input anything to go on')
@@ -409,8 +455,9 @@ def main():
             print "Exiting!"
             os.system("clear")
         else:
-            print "Please input valid Code!"
-            raw_input('Input anything to go on')
+            if ignore == False:
+                print "Please input valid Code!"
+                raw_input('Input anything to go on')
 
 
 

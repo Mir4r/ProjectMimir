@@ -7,7 +7,7 @@ import os
 from glob import glob
 
 def getVersion():
-    return "v0.2.0"
+    return "v0.2.1"
 
 
 class database:
@@ -27,15 +27,19 @@ class database:
             self.id = 0
             for foundfiles in self.filelist:
                 # os.path.splitext(os.path.basename(foundfiles))[0] returns the filename without extention
-                self.entrys.append(entry(None, self.id, os.path.splitext(os.path.basename(foundfiles))[0], foundfiles, "genre","interpret","nostudio","notrated"))
+                self.entrys.append(entry(None, self.id, os.path.splitext(os.path.basename(foundfiles))[0], foundfiles, "nogenre","nointerpret","nostudio","notrated"))
                 self.id = self.id + 1
         if flag == 1:
+            self.worked = True
             self.dirs = [startdir]
             self.DBlines = self.readDB(startdir)
-            for lines in self.DBlines:
-                self.specs = []
-                self.specs = lines.split(" ")
-                self.entrys.append(entry(self.specs))
+            if self.DBlines != False:
+                for lines in self.DBlines:
+                    self.specs = []
+                    self.specs = lines.split(" ")
+                    self.entrys.append(entry(self.specs))
+            else:
+               self.worked = False 
     #Method for finding all Directorys in the given Directory
     #in the end you get a list with als subdirectorys and the starting directory
     def dirfinder(self, directory):
@@ -88,6 +92,11 @@ class database:
         charset = sys.getfilesystemencoding()
         self.lines = []
         #read file "main.db" in the starting directory (dirs[0])
+        try:
+            open(os.path.join(directory, 'main.db'), 'r')
+        except IOError:
+            print "The Database does not exist"
+            return False
         with open(os.path.join(directory, 'main.db'), 'r') as f:
             self.input = f.read()
         #after this you have one sting with all lines seperatet by \n
@@ -162,7 +171,7 @@ class database:
         self.filelist = []
         for d in self.dirs:
             self.filelist = self.filelist + self.getfiles(d)
-        print self.filelist
+        #print self.filelist
         print " "
         for foundfile in self.filelist:
             self.existflag = False
@@ -189,7 +198,7 @@ class database:
 #                return self.insertedflag
         return self.insertedflag
     def runentry(self, entryid):
-        os.system("vlc "+str(self.entrys[entryid].getSpec("PATH"))) 
+        os.system("vlc -q --one-instance "+str(self.entrys[entryid].getSpec("PATH"))+" 2> /dev/null &") 
     def getnumberofentrys(self):
         return len(self.entrys)
         
@@ -316,7 +325,47 @@ class entry:
         #self.entrylist = [str(self.__id),self.name,self.__path,self.genre,self.interpret]
         return self.entrylist
     def printentry(self):
-        print self.id,self.name,self.path,' '.join(self.genre),(' '.join(self.interpret)).replace("%"," "),self.studio
+#        print self.id,self.name,self.path,' '.join(self.genre),(' '.join(self.interpret)).replace("%"," "),self.studio
+        #Define look of output
+        if int(self.id) <= 9:
+            idprint = "  "+str(self.id)
+        elif int(self.id) <= 99 and self.id > 9:
+            idprint = " "+str(self.id)
+        elif int(self.id) >= 100:
+            idprint = str(self.id)
+        if len(self.name) >= 20:
+            nameprint = self.name[0:19]+".."
+        elif len(self.name) < 20:
+            nameprint = self.name +(21-len(self.name))*(" ")
+        #Define what is shown:
+        genreflag = False
+        interpretflag = False
+        studioflag = False
+        genreprint = []
+        for genre in self.genre:
+            if genre != "nogenre":
+                genreprint.append(genre)
+                genreflag = True
+        interpretprint = []
+        for interpret in self.interpret:
+            if interpret != "nointerpret":
+                interpretprint.append(interpret)
+                interpretflag = True
+        studioprint = ""
+        if self.studio != "nostudio":
+            studioprint = self.studio
+            studioflag = True
+         
+        printedstring = idprint+" "+nameprint+" "
+        if genreflag == True:
+            printedstring = printedstring+" "+' '.join(genreprint)
+        if interpretflag == True:
+            printedstring = printedstring+" "+(' '.join(interpretprint)).replace("%"," ")
+        if studioflag == True:
+            printedstring = printedstring+" "+studioprint
+
+        print printedstring
+
 
 def main():
     DB1 = database(0,sys.argv[1])
