@@ -7,8 +7,13 @@ import os
 from glob import glob
 
 def getVersion():
-    return "v0.2.1"
+    return "v0.3.0"
 
+def makestring(symbol, lengths):
+    string = ""
+    for i in range(0,lengths):
+        string = string + symbol
+    return string
 
 class database:
     def __init__(self,flag,startdir):
@@ -109,28 +114,15 @@ class database:
         self.id = len(self.entrys) 
         self.entrys.append(entry(None,self.id,name,path,genre,interpret,studio,rating))
 
-    def modifyentry(self, changewhat, change, startid, endid = None, changeindex = None, changehow = None):
+    def modifyentry(self, changewhat, change, startid, changeindex = None, changehow = None):
         self.index = startid
         if changeindex is None and changehow is None:
-            if endid is None:
-                self.endindex = self.index
-            else:
-                self.endindex = endid
-            while(self.index <= self.endindex):
-                self.entrys[self.index].changeSpec(changewhat,change)
-                self.index = self.index + 1
+            self.entrys[self.index].changeSpec(changewhat,change)
             #print self.entrys[0].name
         else:
-            if endid is None:
-                self.endindex = self.index
-            else:
-                self.endindex = endid
-            while(self.index <= self.endindex):
-                self.status = self.entrys[self.index].changeSpec(changewhat,change,changehow,changeindex)
-                self.index = self.index + 1
-                if self.status == False:
-                    print "Soming went wrong for your modifing request of entry ",self.index
-        #call changeing methode for the entry, that should be changed
+            self.status = self.entrys[self.index].changeSpec(changewhat,change,changehow,changeindex)
+            if self.status == False:
+                print "Soming went wrong for your modifing request of entry ",self.index
     #Method for saving the filelist
     def saveDB(self):
         charset = sys.getfilesystemencoding()
@@ -139,7 +131,8 @@ class database:
             for e in self.entrys:
                 write_items = f.write(''.join(e.listofelements()))
                 write_items = f.write("\n")
-    def printbycriteria(self, criterialist):
+    def listbycriteria(self, criterialist):
+        self.printlist = []
         for i in range(len(self.entrys)):
             self.toprint = []
             self.printflag = False
@@ -163,7 +156,9 @@ class database:
                 if self.toprint[j] == False:
                     self.printflag = False
             if self.printflag == True:
-                self.entrys[i].printentry()
+                #self.entrys[i].printentry()
+                self.printlist.append(i)
+        return self.printlist
     def findnewfiles(self, startdir):
         self.dirs = self.dirfinder(startdir)
         self.insertedflag = False
@@ -187,12 +182,12 @@ class database:
                 for i in range(len(self.entrys)):
                     if i != int(self.entrys[i].getSpec("ID")):
                         print i, self.entrys[i].getSpec("ID")
-                        self.entrys.insert(i, entry(None,i,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "genre","interpret","nostudio","notrated"))
+                        self.entrys.insert(i, entry(None,i,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "nogenre","nointerpret","nostudio","notrated"))
                         self.insertedflag = True
                         break
                 if self.insertedflag == False:
                     self.id = len(self.entrys) 
-                    self.entrys.append(entry(None,self.id,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "genre","interpret","nostudio","notrated"))
+                    self.entrys.append(entry(None,self.id,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "nogenre","nointerpret","nostudio","notrated"))
                     self.insertedflag = False
                     print "anhaengen",self.id
 #                return self.insertedflag
@@ -201,7 +196,22 @@ class database:
         os.system("vlc -q --one-instance "+str(self.entrys[entryid].getSpec("PATH"))+" 2> /dev/null &") 
     def getnumberofentrys(self):
         return len(self.entrys)
-        
+    def sortentrys(self):
+        self.pathlist = []
+        self.tmpentrys = []
+        for i in range(len(self.entrys)):
+            self.pathlist.append(self.entrys[i].getSpec("PATH"))
+        self.pathlist.sort()
+        for i in range(len(self.entrys)):
+            for j in range(len(self.entrys)):
+                if self.entrys[j].getSpec("PATH") == self.pathlist[i]:
+                    self.tmpentrys.append(self.entrys[j])
+                    break
+        if len(self.tmpentrys) != len(self.entrys):
+            print "Error! Lists do not match"
+            exit()
+        self.entrys = self.tmpentrys
+
 
 class entry:
     def __init__(self, specs, ID=None, name=None, path=None, genre=None, interpret=None, studio=None, rating=None):
@@ -324,7 +334,9 @@ class entry:
         #self.entrylist = [str(self.__id),self.name,self.__path,]+self.genre+self.interpret
         #self.entrylist = [str(self.__id),self.name,self.__path,self.genre,self.interpret]
         return self.entrylist
-    def printentry(self):
+    """
+    #Old CODE
+    def printentry(self, lenlist):
 #        print self.id,self.name,self.path,' '.join(self.genre),(' '.join(self.interpret)).replace("%"," "),self.studio
         #Define look of output
         if int(self.id) <= 9:
@@ -355,17 +367,53 @@ class entry:
         if self.studio != "nostudio":
             studioprint = self.studio
             studioflag = True
-         
-        printedstring = idprint+" "+nameprint+" "
-        if genreflag == True:
-            printedstring = printedstring+" "+' '.join(genreprint)
-        if interpretflag == True:
-            printedstring = printedstring+" "+(' '.join(interpretprint)).replace("%"," ")
-        if studioflag == True:
-            printedstring = printedstring+" "+studioprint
-
+        if lenlist == None:
+            printedstring = idprint+" "+nameprint+" "
+            if genreflag == True:
+                printedstring = printedstring+" "+' '.join(genreprint)
+            if interpretflag == True:
+                printedstring = printedstring+" "+(' '.join(interpretprint)).replace("%"," ")
+            if studioflag == True:
+                printedstring = printedstring+" "+studioprint
+        else:
+            printedstring = idprint+" "+nameprint
+            printedgenre = ""
+            printedinterpret = ""
+            printedstudio = ""
+            if genreflag == True:
+                i = -1
+                glen = 0
+                for g in genreprint:
+                    printedgenre = printedgenre + " " + g
+                    glen = glen + len(g)
+                    i = i + 1
+                glen = glen + i
+                #print glen, i
+                if glen < lenlist[0][0]:
+                    printedgenre = printedgenre + makestring(" ",lenlist[0][0]-glen)
+            if genreflag == False:
+                printedgenre = " " +  makestring(" ",lenlist[0][0])
+            printedstring = printedstring + printedgenre
+            if interpretflag == True:
+                i = -1
+                ilen = 0
+                for inter in interpretprint:
+                    printedinterpret = printedinterpret + " " + inter.replace("%"," ")
+                    ilen = ilen + len(inter)
+                    i = i + 1
+                ilen = ilen + i
+                if ilen < lenlist[1][0]:
+                    printedinterpret = printedinterpret + makestring(" ",lenlist[1][0]-ilen)
+            if interpretflag == False:
+                printedinterpret = " " + makestring(" ",lenlist[1][0])
+            printedstring = printedstring + printedinterpret
+            if studioflag == True:
+                printedstudio = " " + studioprint + makestring(" ",lenlist[2][0]-len(studioprint))
+            if studioflag == False:
+                printedstudio = " " + makestring(" ",lenlist[2][0])
+            printedstring = printedstring + printedstudio
         print printedstring
-
+        """
 
 def main():
     DB1 = database(0,sys.argv[1])
