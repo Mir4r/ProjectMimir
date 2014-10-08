@@ -140,11 +140,11 @@ def execute(DB):
 def executeranlist(DB, idlist):
     if idlist == "all":
         idtoexecute = random.randint(0, DB.getnumberofentrys())
-        print "Now playing:",DB.entrys[idtoexecute].getSpec("NAME")
+        printaentry2(DB, True, idtoexecute)
         DB.runentry(idtoexecute)
     else:
         listentry = random.randint(0, len(idlist))
-        print "Now playing:",DB.entrys[idlist[listentry]].getSpec("NAME")
+        printaentry2(DB, True, idlist[listentry])
         DB.runentry(idlist[listentry])
     
 
@@ -203,18 +203,28 @@ def printaentry(DB):
             break
 
 
-def printaentry2(DB):
-    print "Printing Mode"
-    jump = False
-    criteriaprint = False
-    print "+---+-------------------+"
-    print "| 1 | Single entry      |"
-    print "| 2 | Range of entrys   |"
-    print "| 3 | Print by criteria |"
-    print "| 4 | Print all         |"
-    print "+---+-------------------+"
-    mode = intinput('Choose Mode: ')
-    if mode == 1:
+def printaentry2(DB,execflag, execid = None):
+    execflag = 1
+    if execid != None:
+        if execflag == True:
+            mode = 0
+    else:
+        print "Printing Mode"
+        jump = False
+        criteriaprint = False
+        print "+---+-------------------+"
+        print "| 1 | Single entry      |"
+        print "| 2 | Range of entrys   |"
+        print "| 3 | Print by criteria |"
+        print "| 4 | Print all         |"
+        print "+---+-------------------+"
+        mode = intinput('Choose Mode: ')
+    if mode == 0:
+        startid = int(execid)
+        idlist = [startid]
+        jump = True
+        execflag = 0
+    elif mode == 1:
         startid = int(raw_input('Input first ID of range: '))
         idlist = [startid]
         jump = True
@@ -253,12 +263,12 @@ def printaentry2(DB):
         if lengths[2][0] <= 6:
             lengths[2][0] = 6
         #print lengths
-        header =  "ID"+makestring(" ",3)+"NAME"+makestring(" ",18)
-        subheader = makestring("-",3)+makestring(" ",2)+makestring("-",21)+makestring(" ",1)
+        header =  "ID"+makestring(" ",3)+"NAME"+makestring(" ",17)
+        subheader = makestring("-",3)+makestring(" ",2)+makestring("-",21)+makestring("+",1)
         for i in range(len(lengths)):
             if lengths[i][0] != 0:
-                header = header+SpecstoPrint[i]+makestring(" ",lengths[i][0]-len(SpecstoPrint[i]))+" "
-                subheader = subheader + makestring("-",lengths[i][0])+makestring(" ",1)
+                header = header+"|"+SpecstoPrint[i]+makestring(" ",lengths[i][0]-len(SpecstoPrint[i]))
+                subheader = subheader + makestring("-",lengths[i][0])+makestring("+",1)
         print header
         print subheader
         for i in idlist:
@@ -307,8 +317,13 @@ def printaentry2(DB):
                 if genreflag == True:
                     i = -1
                     glen = 0
+                    firstflag = True
                     for g in genreprint:
-                        printedgenre = printedgenre + " "  + g
+                        if firstflag == True:
+                            printedgenre = printedgenre + "|"  + g
+                            firstflag = False
+                        else:
+                            printedgenre = printedgenre + " "  + g
                         glen = glen + len(g)
                         i = i + 1
                     glen = glen + i
@@ -316,31 +331,35 @@ def printaentry2(DB):
                     if glen < lengths[0][0]:
                         printedgenre = printedgenre + makestring(" ",lengths[0][0]-glen)
                 if genreflag == False:
-                    printedgenre = " " +  makestring(" ",lengths[0][0])
+                    printedgenre = "|" +  makestring(" ",lengths[0][0])
                 printedstring = printedstring + printedgenre
                 if interpretflag == True:
                     i = -1
+                    firstflag = True
                     ilen = 0
                     for inter in interpretprint:
-                        printedinterpret = printedinterpret + " " + inter.replace("%"," ")
+                        if firstflag == True:
+                            printedinterpret = printedinterpret + "|" + inter.replace("%"," ")
+                            firstflag = False
+                        else:
+                            printedinterpret = printedinterpret + " " + inter.replace("%"," ")
                         ilen = ilen + len(inter)
                         i = i + 1
                     ilen = ilen + i
                     if ilen < lengths[1][0]:
                         printedinterpret = printedinterpret + makestring(" ",lengths[1][0]-ilen)
                 if interpretflag == False:
-                    printedinterpret = " " + makestring(" ",lengths[1][0])
+                    printedinterpret = "|" + makestring(" ",lengths[1][0])
                 printedstring = printedstring + printedinterpret
                 if studioflag == True:
-                    printedstudio = " " + studioprint + makestring(" ",lengths[2][0]-len(studioprint))
+                    printedstudio = "|" + studioprint + makestring(" ",lengths[2][0]-len(studioprint))
                 if studioflag == False:
-                    printedstudio = " " + makestring(" ",lengths[2][0])
+                    printedstudio = "|" + makestring(" ",lengths[2][0])
                 printedstring = printedstring + printedstudio
             print printedstring            
         #raw_input('Input anything to go on')
     else:
         raw_input('Invalid Mode. Press key to continue')
-    execflag = 1
     flag = True
     while(execflag != 0):
         execflag = intinput('Input Code (0 to go to mainmenu): ')
@@ -349,7 +368,8 @@ def printaentry2(DB):
         if execflag == 2:
             modifyaentry(DB)
         if execflag == 3:
-            flag = printaentry2(DB)
+            printaentry2(DB, False, None)
+#            flag = printaentry2(DB)
         if execflag == 4:
             if criteriaprint == True:
                 executeranlist(DB, idlist)
@@ -662,7 +682,7 @@ def main():
     ignore = False
     criteriaprint = False
     directory = ""
-
+    DB = backend.database(1,"/media/truecrypt12/")
     DBexists = True
     while(Code != 0):
         os.system("clear")
@@ -699,7 +719,7 @@ def main():
             if Code == 2:
                 modifyaentry(DB)
             if Code == 3:
-                printaentry2(DB)
+                printaentry2(DB, False, None)
             if Code == 4:
                 if criteriaprint == True:
                     executeranlist(DB, idlist)
