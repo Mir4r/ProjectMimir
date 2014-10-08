@@ -1,8 +1,9 @@
 #Frontend for usage of Project Mimir in Terminal
-# MTF (MimirTerminalFrontend) v0.1.2 
+# MTF (MimirTerminalFrontend) v0.2.5 
 #2014, K. Schweiger
 import backend
 import os
+import random
 
 def makestring(symbol, lengths):
     string = ""
@@ -22,17 +23,12 @@ def banner(database):
     print "-"+makestring(" ",5)+"   2 | Modify               | Modify Name, Genres, Interprets, Studio and Rating. Genres and Interprets are Lists, so you    -"
     print "-"+makestring(" ",10)+    " "+makestring(" ",22)+"| can Append and Modify Elements or overwrite the list                                           -"
     print "-"+makestring(" ",5)+"   3 | Print Information    | Prints the informations of a given entry (Input: ID)                                           -"
-    print "-"+makestring(" ",5)+"   5 | Sort entrys          | Sort the entrys of the DB by their path                                                        -"
-    print "-"+makestring(" ",5)+"   6 | Statistics           | Choose between different statistics                                                            -"
+    print "-"+makestring(" ",5)+"   4 | Random !!!!          | Execute a Random Entry. If printed by criteria, execute one of these                           -"
+    print "-"+makestring(" ",5)+"   5 | Statistics           | Choose between different statistics                                                            -"
     print "-"+makestring(" ",5)+"  42 | Help                 | Get a few informations and help                                                                -"
-    print "-"+makestring(" ",5)+"  95 | Create new DB        | Create a new Database. From the starting directory, files matching a list of datatypes are     -"
-    print "-"+makestring(" ",10)+    " "+makestring(" ",22)+"| added as entrys to the database                                                                -"
-    print "-"+makestring(" ",5)+"  96 | Read existing DB     | A previously saved database is loaded                                                          -"
-    print "-"+makestring(" ",5)+"  97 | Remove Entrys        | Search for new nonexisting Files in the database and removes them. Also adds new files         -"
-    print "-"+makestring(" ",5)+"  98 | Search for new Files | Search for new Files in a given directory and subirectorys and adds them as entrys             -"
-    print "-"+makestring(" ",5)+"  99 | Save DB              | Saves the current database in a File                                                           -"
+    print "-"+makestring(" ",5)+"  99 | DB options           | Options for modifieing the DB                                                                  -"
     print "-"+makestring(" ",130)+"-"
-    print "- "+str(database)+makestring(" ",118-len(database))+"MTF v0.2.4 -"
+    print "- "+str(database)+makestring(" ",118-len(database))+"MTF v0.2.5 -"
     print makestring("-",132)
 
 def intinput(string):
@@ -46,6 +42,55 @@ def intinput(string):
             flag = False
     return input
 
+def DBoptions(DB, DBexists):
+    print "+---+-------Options--------+"
+    #print "| 0 | Exit                 |"
+    print "| 1 | Create new DB        |"
+    print "| 2 | Read existing DB     |"
+    print "| 3 | Remove Entrys        |"
+    print "| 4 | Search for new Files |"
+    print "| 5 | Save DB              |"
+    print "+---+----------------------+"
+    Code = intinput("Choose Mode: ")
+    if Code == 1:
+        if DBexists == False:
+            directory = raw_input('Input starting directory:')
+            DB = backend.database(0,directory)
+            DBexists = True
+        else:
+            print "There is already a Database" 
+            raw_input('Input anything to go on')
+    elif Code == 2:
+        if DBexists == False:
+            ignore = False
+            directory = raw_input('Input directory where database file is located: ')
+            DB = backend.database(1,directory)
+            if DB.worked == False:
+                raw_input("Please press a key")
+                ignore = True
+            else:
+                DBexists = True
+        else:
+            print "There is already a Database" 
+            raw_input('Input anything to go on')
+    elif Code == 3:
+        if DBexists == True:
+            removeentrys(DB)
+        else:
+            print "There is no DB yet"
+    elif Code == 4:
+        if DBexists == True:
+            searchnewfiles(DB)
+        else:
+            print "There is no DB yet"
+    elif Code == 5:
+        if DBexists == True:
+            DB.saveDB()
+        else:
+            print "There is no DB yet"
+    else:
+        print "Wront input"
+    return DBexists
 
 
 #make nice listings Specs, when printing enrys with the printentrys function
@@ -86,11 +131,22 @@ def findmaxSpeclen(DB, IDlist, specname):
 
 
 def execute(DB):
-    idtoexecute = int(raw_input('Input ID of entry, to be executer: '))
+    idtoexecute = int(raw_input('Input ID of entry, to be executed: '))
+    if idtoexecute == -1:
+       idtoexecute = random.randint(0, DB.getnumberofentrys())
     print "Now playing:",DB.entrys[idtoexecute].getSpec("NAME")
     DB.runentry(idtoexecute)
     
-
+def executeranlist(DB, idlist):
+    if idlist == "all":
+        idtoexecute = random.randint(0, DB.getnumberofentrys())
+        print "Now playing:",DB.entrys[idtoexecute].getSpec("NAME")
+        DB.runentry(idtoexecute)
+    else:
+        listentry = random.randint(0, len(idlist))
+        print "Now playing:",DB.entrys[idlist[listentry]].getSpec("NAME")
+        DB.runentry(idlist[listentry])
+    
 
 def searchnewfiles(DB):
     directory = raw_input('Input directory where database file is located:')
@@ -137,7 +193,10 @@ def printaentry(DB):
         if execflag == 3:
             flag = printaentry2(DB)
         if execflag == 4:
-            printbycriteria(DB)
+            if criteriaprint == True:
+                executeranlist(DB, idlist)
+            else:
+                executeranlist(DB, "all")
         if execflag == 0:
             return False
         if flag == False:
@@ -147,12 +206,13 @@ def printaentry(DB):
 def printaentry2(DB):
     print "Printing Mode"
     jump = False
-    print "+---------------------+"
-    print "|     Single entry - 1|"
-    print "|  Range of entrys - 2|"
-    print "|Print by criteria - 3|"
-    print "|        Print all - 4|"
-    print "+---------------------+"
+    criteriaprint = False
+    print "+---+-------------------+"
+    print "| 1 | Single entry      |"
+    print "| 2 | Range of entrys   |"
+    print "| 3 | Print by criteria |"
+    print "| 4 | Print all         |"
+    print "+---+-------------------+"
     mode = intinput('Choose Mode: ')
     if mode == 1:
         startid = int(raw_input('Input first ID of range: '))
@@ -174,6 +234,7 @@ def printaentry2(DB):
             criterialist.append(criteria)
         idlist =  DB.listbycriteria(criterialist)
         jump = True
+        criteriaprint = True
     elif mode == 4:
         idlist =  DB.listbycriteria([])
         jump = True
@@ -290,7 +351,10 @@ def printaentry2(DB):
         if execflag == 3:
             flag = printaentry2(DB)
         if execflag == 4:
-            printbycriteria(DB)
+            if criteriaprint == True:
+                executeranlist(DB, idlist)
+            else:
+                executeranlist(DB, "all")
         if execflag == 0:
             return False
         if flag == False:
@@ -596,12 +660,17 @@ def main():
     Code = 999
     DBexists = False
     ignore = False
+    criteriaprint = False
     directory = ""
 
+    DBexists = True
     while(Code != 0):
         os.system("clear")
         banner(directory)
         Code = intinput('Input Code: ')
+        if Code == 99:
+            DBexists = DBoptions(DB, DBexists)
+        """
         if Code == 95:
             if DBexists == False:
                 directory = raw_input('Input starting directory:')
@@ -623,6 +692,7 @@ def main():
             else:
                 print "There is already a Database" 
                 raw_input('Input anything to go on')
+        """
         if DBexists == True:
             if Code == 1:
                 execute(DB)
@@ -631,17 +701,12 @@ def main():
             if Code == 3:
                 printaentry2(DB)
             if Code == 4:
-                printbycriteria(DB)
+                if criteriaprint == True:
+                    executeranlist(DB, idlist)
+                else:
+                    executeranlist(DB, "all")
             if Code == 5:
-                sortentrys(DB)
-            if Code == 6:
                 statisticsmode(DB)
-            if Code == 97:
-                removeentrys(DB)
-            if Code == 98:
-                searchnewfiles(DB)
-            if Code == 99:
-                DB.saveDB()
             if Code == 0:
                 print "Exiting!"
                 os.system("clear")   
