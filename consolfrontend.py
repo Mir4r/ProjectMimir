@@ -1,5 +1,5 @@
 #Frontend for usage of Project Mimir in Terminal
-# MTF (MimirTerminalFrontend) v0.2.5 
+# MTF (MimirTerminalFrontend) v0.2.6 
 #2014, K. Schweiger
 import backend
 import os
@@ -28,7 +28,7 @@ def banner(database):
     print "-"+makestring(" ",5)+"  42 | Help                 | Get a few informations and help                                                                -"
     print "-"+makestring(" ",5)+"  99 | DB options           | Options for modifieing the DB                                                                  -"
     print "-"+makestring(" ",130)+"-"
-    print "- "+str(database)+makestring(" ",118-len(database))+"MTF v0.2.5 -"
+    print "- "+str(database)+makestring(" ",118-len(database))+"MTF v0.2.6 -"
     print makestring("-",132)
 
 def intinput(string):
@@ -42,15 +42,14 @@ def intinput(string):
             flag = False
     return input
 
-def DBoptions(DB, DBexists):
-    print "+---+-------Options--------+"
-    #print "| 0 | Exit                 |"
-    print "| 1 | Create new DB        |"
-    print "| 2 | Read existing DB     |"
-    print "| 3 | Remove Entrys        |"
-    print "| 4 | Search for new Files |"
-    print "| 5 | Save DB              |"
-    print "+---+----------------------+"
+def DBoptions(DB, DBexists, directory):
+    print "+---+-------Options------------------+"
+    print "| 1 | Create new DB                  |"
+    print "| 2 | Read existing DB               |"
+    print "| 3 | Remove Entrys/Find new Fils    |"
+    print "| 4 | Check for changed Directorys   |"
+    print "| 5 | Save DB                        |"
+    print "+---+--------------------------------+"
     Code = intinput("Choose Mode: ")
     if Code == 1:
         if DBexists == False:
@@ -80,7 +79,8 @@ def DBoptions(DB, DBexists):
             print "There is no DB yet"
     elif Code == 4:
         if DBexists == True:
-            searchnewfiles(DB)
+            #searchnewfiles(DB)
+            changeddirs(DB,directory)
         else:
             print "There is no DB yet"
     elif Code == 5:
@@ -143,7 +143,7 @@ def executeranlist(DB, idlist):
         printaentry2(DB, True, idtoexecute)
         DB.runentry(idtoexecute)
     else:
-        listentry = random.randint(0, len(idlist))
+        listentry = random.randint(0, len(idlist)-1)
         printaentry2(DB, True, idlist[listentry])
         DB.runentry(idlist[listentry])
     
@@ -152,6 +152,11 @@ def searchnewfiles(DB):
     directory = raw_input('Input directory where database file is located:')
     DB.findnewfiles(directory)
 
+
+def changeddirs(DB, StartDir):
+    DB.changedpaths(StartDir)
+    print " "
+    raw_input('press anything')
 
 
 def printaentry(DB):
@@ -541,7 +546,7 @@ def removeentrys(DB):
         if execflag == 2:
             modifyaentry(DB)
         if execflag == 3:
-            flag = printaentry2(DB)
+            flag = printaentry2(DB,False, None)
         if execflag == 4:
             printbycriteria(DB)
         if execflag == 0:
@@ -682,14 +687,13 @@ def main():
     ignore = False
     criteriaprint = False
     directory = ""
-    DB = backend.database(1,"/media/truecrypt12/")
     DBexists = True
     while(Code != 0):
         os.system("clear")
         banner(directory)
         Code = intinput('Input Code: ')
         if Code == 99:
-            DBexists = DBoptions(DB, DBexists)
+            DBexists = DBoptions(DB, DBexists, directory)
         """
         if Code == 95:
             if DBexists == False:

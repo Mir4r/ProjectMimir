@@ -7,7 +7,7 @@ import os
 from glob import glob
 
 def getVersion():
-    return "v0.3.0"
+    return "v0.3.1"
 
 def makestring(symbol, lengths):
     string = ""
@@ -89,7 +89,28 @@ class database:
                     self.entrys[-1].changeSpec("ID", j)
                     self.entrys.insert(j, self.entrys[-1])
                     del self.entrys[-1]
-                    
+    def changedpaths(self, startdir):
+        changedlistid = []
+        changedlistpath = []
+        self.lastid = len(self.entrys)
+        for i in range(self.lastid):
+                try :
+                    open(self.entrys[i].getSpec("PATH"))
+                except IOError:
+                    changedlistid.append(self.entrys[i].getSpec("ID"))
+                    changedlistpath.append(self.entrys[i].getSpec("PATH"))
+        self.dirs = self.dirfinder(startdir)
+        #filelist contains the paths to the files
+        self.filelist = []
+        for d in self.dirs:
+            self.filelist = self.filelist + self.getfiles(d)         
+        for j in range(len(changedlistid)):
+            self.name = os.path.basename(changedlistpath[j]) #Filename of files, that have changed location
+            for i in range(len(self.filelist)):
+                if os.path.basename(self.filelist[i]) == self.name:
+                    self.entrys[int(changedlistid[j])].changeSpec("PATH",self.filelist[i])
+                    print changedlistid[j]," was at ", changedlistpath[j], " and is now at ",self.filelist[i]
+
     #Read the Database file and returns a list of the lines in the file
     def readDB(self, directory):
         print "ReadDB"
@@ -122,7 +143,7 @@ class database:
         else:
             self.status = self.entrys[self.index].changeSpec(changewhat,change,changehow,changeindex)
             if self.status == False:
-                print "Soming went wrong for your modifing request of entry ",self.index
+                print "Something went wrong for your modifing request of entry ",self.index
     #Method for saving the filelist
     def saveDB(self):
         charset = sys.getfilesystemencoding()
