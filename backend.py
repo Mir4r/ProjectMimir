@@ -5,10 +5,25 @@
 import sys
 import os
 from glob import glob
+import time
+import missingspecs
 
 def getVersion():
     return "v0.3.1"
 
+def getcurrentspecs():
+    return ["GENRE","INTERPRET","STUDIO","RATED","LASTOPEND","ADDDATE","TEST"]
+
+def gettime(flag):
+    lt = time.localtime()
+    if flag == "date":
+        date = str(lt[2])+"."+str(lt[1])+"."+str(lt[0]-2000)
+        return date
+    elif flag == "time":
+        time = str(lt[3])+":"+str(lt[4])+":"+str(lt[5])
+        return time
+
+        
 def makestring(symbol, lengths):
     string = ""
     for i in range(0,lengths):
@@ -17,6 +32,8 @@ def makestring(symbol, lengths):
 
 class database:
     def __init__(self,flag,startdir):
+        #lt = time.localtime()
+        #date = str(lt[2])+"."+str(lt[1])+"."+str(lt[0]-2000)
         self.entrys = []
         self.openids = False
         self.rootdir = startdir
@@ -32,7 +49,7 @@ class database:
             self.id = 0
             for foundfiles in self.filelist:
                 # os.path.splitext(os.path.basename(foundfiles))[0] returns the filename without extention
-                self.entrys.append(entry(None, self.id, os.path.splitext(os.path.basename(foundfiles))[0], foundfiles, "nogenre","nointerpret","nostudio","notrated"))
+                self.entrys.append(entry(None, self.id, os.path.splitext(os.path.basename(foundfiles))[0], foundfiles, "nogenre","nointerpret","nostudio","notrated","neveropened",gettime("date")))
                 self.id = self.id + 1
         if flag == 1:
             self.worked = True
@@ -232,10 +249,14 @@ class database:
             print "Error! Lists do not match"
             exit()
         self.entrys = self.tmpentrys
+    def entryopened(self, idopened):
+        #lt = time.localtime()
+        #date = str(lt[2])+"."+str(lt[1])+"."+str(lt[0]-2000)
+        self.entrys[idopened].changeSpec("LASTOPENED",gettime("date"))
 
 
 class entry:
-    def __init__(self, specs, ID=None, name=None, path=None, genre=None, interpret=None, studio=None, rating=None):
+    def __init__(self, specs, ID=None, name=None, path=None, genre=None, interpret=None, studio=None, rating=None, lastopened=None, added=None):
         if specs is None:
             self.genre = []
             self.interpret = []
@@ -246,6 +267,8 @@ class entry:
             self.interpret.append(interpret)
             self.studio=studio
             self.rating=rating
+            self.lastopened=lastopened
+            self.added=added
         else:
             self.genre = []
             self.interpret = []        
@@ -265,6 +288,10 @@ class entry:
                     self.studio = self.spec[1]
                 if self.spec[0] == "RATING":
                     self.rating = self.spec[1]
+                if self.spec[0] == "LASTOPENED":
+                    self.lastopened = self.spec[1]
+                if self.spec[0] == "ADDED":
+                    self.added = self.spec[1]
     def changeSpec(self, what, newSpec, how = None, listnum = None):
         if what == "ID":
             self.id = newSpec
@@ -317,6 +344,12 @@ class entry:
         if what == "RATING":
             self.rating = newSpec
             return True
+        if what == "LASTOPENED":
+            self.lastopened = newSpec
+            return True
+        if what == "ADDED":
+            self.added = newSpec
+            return True
         #if given what is no calid option, report error
         else:
             return False
@@ -335,8 +368,12 @@ class entry:
             return self.studio
         if what == "RATING$" or what == "RATING":
             return self.rating        
+        if what == "LASTOPENED$" or what == "LASTOPENED":
+            return self.lastopened 
+        if what == "ADDED$" or what == "ADDED":
+            return self.added 
     def listofelements(self):
-        self.loopelem = ["ID$","NAME$","PATH$","GENRE$","INTERPRET$","STUDIO$","RATING$"]
+        self.loopelem = ["ID$","NAME$","PATH$","GENRE$","INTERPRET$","STUDIO$","RATING$","LASTOPENED$","ADDED$"]
         self.entrylist = []
         for elem in self.loopelem:
             if type(self.getSpec(elem)) is list:

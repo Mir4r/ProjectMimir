@@ -1,9 +1,12 @@
 #Frontend for usage of Project Mimir in Terminal
-# MTF (MimirTerminalFrontend) v0.2.6 
+# MTF (MimirTerminalFrontend) v0.2.7
 #2014, K. Schweiger
 import backend
+import missingspecs
 import os
 import random
+
+
 
 def makestring(symbol, lengths):
     string = ""
@@ -28,7 +31,7 @@ def banner(database):
     print "-"+makestring(" ",5)+"  42 | Help                 | Get a few informations and help                                                                -"
     print "-"+makestring(" ",5)+"  99 | DB options           | Options for modifieing the DB                                                                  -"
     print "-"+makestring(" ",130)+"-"
-    print "- "+str(database)+makestring(" ",118-len(database))+"MTF v0.2.6 -"
+    print "- "+str(database)+makestring(" ",118-len(database))+"MTF v0.2.7 -"
     print makestring("-",132)
 
 def intinput(string):
@@ -49,6 +52,7 @@ def DBoptions(DB, DBexists, directory):
     print "| 3 | Remove Entrys/Find new Fils    |"
     print "| 4 | Check for changed Directorys   |"
     print "| 5 | Save DB                        |"
+    print "| 6 | Add new specs tothe DB         |"
     print "+---+--------------------------------+"
     Code = intinput("Choose Mode: ")
     if Code == 1:
@@ -86,6 +90,13 @@ def DBoptions(DB, DBexists, directory):
     elif Code == 5:
         if DBexists == True:
             DB.saveDB()
+        else:
+            print "There is no DB yet"
+    elif Code == 6:
+        if DBexists == True:
+            missingspecs.main(directory)
+            del DB
+            DB = backend.database(1,directory)
         else:
             print "There is no DB yet"
     else:
@@ -136,16 +147,19 @@ def execute(DB):
        idtoexecute = random.randint(0, DB.getnumberofentrys())
     print "Now playing:",DB.entrys[idtoexecute].getSpec("NAME")
     DB.runentry(idtoexecute)
+    DB.entryopened(idtoexecute)
     
 def executeranlist(DB, idlist):
     if idlist == "all":
         idtoexecute = random.randint(0, DB.getnumberofentrys())
         printaentry2(DB, True, idtoexecute)
         DB.runentry(idtoexecute)
+        DB.entryopened(idtoexecute)
     else:
         listentry = random.randint(0, len(idlist)-1)
         printaentry2(DB, True, idlist[listentry])
         DB.runentry(idlist[listentry])
+        DB.entryopened(listentry)
     
 
 def searchnewfiles(DB):
@@ -257,7 +271,8 @@ def printaentry2(DB,execflag, execid = None):
         jump = False
     #Code for nice printing
     if jump == True:
-        SpecstoPrint = ["GENRE","INTERPRET","STUDIO"]
+        SpecstoPrint = ["GENRE","INTERPRET","STUDIO","LASTOPENED"]
+        SpecsPrinted = ["GENRE","INTERPRET","STUDIO","OPENED"]
         lengths = []
         for spec in SpecstoPrint:
             lengths.append(findmaxSpeclen(DB,idlist,spec))
@@ -267,15 +282,17 @@ def printaentry2(DB,execflag, execid = None):
             lengths[1][0] = 9
         if lengths[2][0] <= 6:
             lengths[2][0] = 6
+        lengths[3][0] = 8
         #print lengths
         header =  "ID"+makestring(" ",3)+"NAME"+makestring(" ",17)
         subheader = makestring("-",3)+makestring(" ",2)+makestring("-",21)+makestring("+",1)
         for i in range(len(lengths)):
             if lengths[i][0] != 0:
-                header = header+"|"+SpecstoPrint[i]+makestring(" ",lengths[i][0]-len(SpecstoPrint[i]))
+                header = header+"|"+SpecsPrinted[i]+makestring(" ",lengths[i][0]-len(SpecsPrinted[i]))
                 subheader = subheader + makestring("-",lengths[i][0])+makestring("+",1)
         print header
         print subheader
+#        print lengths[3][0]
         for i in idlist:
             #DB.entrys[i].printentry(lengths)
             if int(DB.entrys[i].id) <= 9:
@@ -292,6 +309,7 @@ def printaentry2(DB,execflag, execid = None):
             genreflag = False
             interpretflag = False
             studioflag = False
+            openedflag = False
             genreprint = []
             for genre in DB.entrys[i].genre:
                 if genre != "nogenre":
@@ -306,6 +324,10 @@ def printaentry2(DB,execflag, execid = None):
             if DB.entrys[i].studio != "nostudio":
                 studioprint = DB.entrys[i].studio
                 studioflag = True
+            lastopenedprint = ""
+            if DB.entrys[i].lastopened != "neveropened":
+                lastopenedprint = DB.entrys[i].lastopened
+                openedflag = True
             if lengths == None:
                 printedstring = idprint+"  "+nameprint+"  "
                 if genreflag == True:
@@ -314,11 +336,14 @@ def printaentry2(DB,execflag, execid = None):
                     printedstring = printedstring+" "+(' '.join(interpretprint)).replace("%"," ")
                 if studioflag == True:
                     printedstring = printedstring+" "+studioprint
+                if openedflag == True:
+                    printedstring = printedstring+" "+lastopenedprint
             else:
                 printedstring = idprint+"  "+nameprint
                 printedgenre = ""
                 printedinterpret = ""
                 printedstudio = ""
+                printedopened = ""
                 if genreflag == True:
                     i = -1
                     glen = 0
@@ -361,6 +386,11 @@ def printaentry2(DB,execflag, execid = None):
                 if studioflag == False:
                     printedstudio = "|" + makestring(" ",lengths[2][0])
                 printedstring = printedstring + printedstudio
+                if openedflag == True:
+                    printedopened = "|" + lastopenedprint + makestring(" ",lengths[3][0]-len(lastopenedprint))
+                if openedflag == False:
+                    printedopened = "|" + makestring(" ",lengths[3][0])
+                printedstring = printedstring + printedopened
             print printedstring            
         #raw_input('Input anything to go on')
     else:
