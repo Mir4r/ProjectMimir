@@ -1,12 +1,12 @@
 #Frontend for usage of Project Mimir in Terminal
-# MTF (MimirTerminalFrontend) v0.2.7
+# MTF (MimirTerminalFrontend) v0.3.0
 #2014, K. Schweiger
 import backend
 import missingspecs
 import os
 import random
-
-
+import time
+import MTFconfig
 
 def makestring(symbol, lengths):
     string = ""
@@ -31,7 +31,7 @@ def banner(database):
     print "-"+makestring(" ",5)+"  42 | Help                 | Get a few informations and help                                                                -"
     print "-"+makestring(" ",5)+"  99 | DB options           | Options for modifieing the DB                                                                  -"
     print "-"+makestring(" ",130)+"-"
-    print "- "+str(database)+makestring(" ",118-len(database))+"MTF v0.2.7 -"
+    print "- "+str(database)+makestring(" ",118-len(database))+"MTF v0.3.0 -"
     print makestring("-",132)
 
 def intinput(string):
@@ -172,55 +172,53 @@ def changeddirs(DB, StartDir):
     print " "
     raw_input('press anything')
 
-
-def printaentry(DB):
-    print "Printing Mode"
-    mode = intinput('Mode? 1: Single entry, 2: Range of entrys ')
-    if mode == 1:
-        idtoshow = int(raw_input('Input  ID: '))
-        DB.entrys[idtoshow].printentry(None)
-        #raw_input('Input anything to go on')
-    elif mode == 2:
-        startid = int(raw_input('Input first ID of range: '))
-        endid = int(raw_input('Input last ID of range: '))
-        SpecstoPrint = ["GENRE","INTERPRET","STUDIO"]
-        lengths = []
-        for spec in SpecstoPrint:
-            lengths.append(findmaxSpeclen(DB,startid,endid,spec))
-        #print lengths
-        header =  "ID"+makestring(" ",2)+"NAME"+makestring(" ",18)
-        subheader = makestring("-",3)+makestring(" ",1)+makestring("-",21)+makestring(" ",1)
-        for i in range(len(lengths)):
-            if lengths[i][0] != 0:
-                header = header+SpecstoPrint[i]+makestring(" ",lengths[i][0]-len(SpecstoPrint[i]))+" "
-                subheader = subheader + makestring("-",lengths[i][0])+makestring(" ",1)
-        print header
-        print subheader
-        for i in range(startid, endid+1):
-            DB.entrys[i].printentry(lengths)
-        #raw_input('Input anything to go on')
-    else:
-        raw_input('Invalid Mode. Press key to continue')
-    execflag = 1
-    flag = True
-    while(execflag != 0):
-        execflag = intinput('Input Code (0 to go to mainmenu): ')
-        if execflag == 1:
-            execute(DB)
-        if execflag == 2:
-            modifyaentry(DB)
-        if execflag == 3:
-            flag = printaentry2(DB)
-        if execflag == 4:
-            if criteriaprint == True:
-                executeranlist(DB, idlist)
-            else:
-                executeranlist(DB, "all")
-        if execflag == 0:
-            return False
-        if flag == False:
-            break
-
+def getentrysbydate(DB,flag):
+    flaglist = ["LASTMOD","ADDED","OPENED"]
+    numtolist = 15
+    date = [00,00,00,00,00,00]
+    order = [2,1,0,3,4,5]
+    numofentrys = DB.getnumberofentrys()
+    idlist = []
+    if flag in flaglist:
+        for i in range(numtolist):
+            #print "i = ",i
+            #raw_input("press1")
+            date = [00,00,00,00,00,00]
+            for j in range(0,numofentrys):
+                #print "j = ",j
+                #if j%100 == 1:
+                    #raw_input("press")
+                if j in idlist:
+                    machwas = 0
+#                    date = [00,00,00,00,00,00]
+                else:
+                    #if True:
+                    if flag == "OPENED" and DB.entrys[j].getSpec("OPENED") != "neveropened" or flag == "LASTMOD" and DB.entrys[j].getSpec("LASTMOD") != "nevermod" or flag == "ADDED":
+                        entrydate = []
+                        newdate = False
+                        tmp1 = DB.entrys[j].getSpec(flag).split("|")
+                        entrydate = entrydate + tmp1[0].split(".")
+                        entrydate = entrydate + tmp1[1].split(":")
+                        #print entrydate
+                        for position in order:
+                            lowflag = True
+                            if int(entrydate[position]) > int(date[position]):
+                                for k in order:
+                                    if k == position:
+                                        #print "k = ",k
+                                        break
+                                    else:
+                                        if date[k] > entrydate[k]:
+                                            #print "Tatu"
+                                            lowflag = False
+                                if lowflag == True:
+                                    date = entrydate
+                                    newid = DB.entrys[j].getSpec("ID")
+                                    newdate = True
+                                    #print "newid = ", newid
+                                #print entrydate," --- ",date
+            idlist.append(int(newid))
+    return idlist
 
 def printaentry2(DB,execflag, execid = None):
     execflag = 1
@@ -231,12 +229,15 @@ def printaentry2(DB,execflag, execid = None):
         print "Printing Mode"
         jump = False
         criteriaprint = False
-        print "+---+-------------------+"
-        print "| 1 | Single entry      |"
-        print "| 2 | Range of entrys   |"
-        print "| 3 | Print by criteria |"
-        print "| 4 | Print all         |"
-        print "+---+-------------------+"
+        print "+---+--------------------------+"
+        print "| 1 | Single entry             |"
+        print "| 2 | Range of entrys          |"
+        print "| 3 | Print by criteria        |"
+        print "| 4 | Print all                |"
+        print "| 5 | Print by Date Added      |"
+        print "| 6 | Print by Date Modified   |"
+        print "| 7 | Print by Date Opened     |"
+        print "+---+--------------------------+"
         mode = intinput('Choose Mode: ')
     if mode == 0:
         startid = int(execid)
@@ -267,12 +268,22 @@ def printaentry2(DB,execflag, execid = None):
     elif mode == 4:
         idlist =  DB.listbycriteria([])
         jump = True
+    elif mode == 5:
+        idlist = getentrysbydate(DB,"ADDED")
+        jump = True
+    elif mode == 6:
+        idlist = getentrysbydate(DB,"LASTMOD")
+        jump = True
+    elif mode == 7:
+        idlist = getentrysbydate(DB,"OPENED")
+        jump = True
+
     else:
         jump = False
     #Code for nice printing
     if jump == True:
-        SpecstoPrint = ["GENRE","INTERPRET","STUDIO","LASTOPENED"]
-        SpecsPrinted = ["GENRE","INTERPRET","STUDIO","OPENED"]
+        SpecstoPrint = ["GENRE","INTERPRET","STUDIO","NUMOPENED","OPENED"]
+        SpecsPrinted = ["GENRE","INTERPRET","STUDIO","#","OPENED"]
         lengths = []
         for spec in SpecstoPrint:
             lengths.append(findmaxSpeclen(DB,idlist,spec))
@@ -282,7 +293,7 @@ def printaentry2(DB,execflag, execid = None):
             lengths[1][0] = 9
         if lengths[2][0] <= 6:
             lengths[2][0] = 6
-        lengths[3][0] = 8
+        lengths[4][0] = 8
         #print lengths
         header =  "ID"+makestring(" ",3)+"NAME"+makestring(" ",17)
         subheader = makestring("-",3)+makestring(" ",2)+makestring("-",21)+makestring("+",1)
@@ -310,6 +321,7 @@ def printaentry2(DB,execflag, execid = None):
             interpretflag = False
             studioflag = False
             openedflag = False
+            numflag = False
             genreprint = []
             for genre in DB.entrys[i].genre:
                 if genre != "nogenre":
@@ -324,10 +336,15 @@ def printaentry2(DB,execflag, execid = None):
             if DB.entrys[i].studio != "nostudio":
                 studioprint = DB.entrys[i].studio
                 studioflag = True
-            lastopenedprint = ""
-            if DB.entrys[i].lastopened != "neveropened":
-                lastopenedprint = DB.entrys[i].lastopened
+            openedprint = ""
+            if DB.entrys[i].opened != "neveropened":
+                openedprint = DB.entrys[i].opened[0:8]
                 openedflag = True
+            numprint = ""
+            numprint = DB.entrys[i].numopened
+            if int(numprint) <= 9 and lengths[3][0] > 1:
+                numprint = " "+numprint
+            numflag = True            
             if lengths == None:
                 printedstring = idprint+"  "+nameprint+"  "
                 if genreflag == True:
@@ -337,13 +354,14 @@ def printaentry2(DB,execflag, execid = None):
                 if studioflag == True:
                     printedstring = printedstring+" "+studioprint
                 if openedflag == True:
-                    printedstring = printedstring+" "+lastopenedprint
+                    printedstring = printedstring+" "+openedprint
             else:
                 printedstring = idprint+"  "+nameprint
                 printedgenre = ""
                 printedinterpret = ""
                 printedstudio = ""
                 printedopened = ""
+                printednum = ""
                 if genreflag == True:
                     i = -1
                     glen = 0
@@ -386,10 +404,13 @@ def printaentry2(DB,execflag, execid = None):
                 if studioflag == False:
                     printedstudio = "|" + makestring(" ",lengths[2][0])
                 printedstring = printedstring + printedstudio
+                if numflag == True:
+                    printednum = "|"+numprint +makestring(" ",lengths[3][0]-len(numprint))
+                printedstring = printedstring + printednum
                 if openedflag == True:
-                    printedopened = "|" + lastopenedprint + makestring(" ",lengths[3][0]-len(lastopenedprint))
+                    printedopened = "|" + openedprint + makestring(" ",lengths[4][0]-len(openedprint))
                 if openedflag == False:
-                    printedopened = "|" + makestring(" ",lengths[3][0])
+                    printedopened = "|" + makestring(" ",lengths[4][0])
                 printedstring = printedstring + printedopened
             print printedstring            
         #raw_input('Input anything to go on')
@@ -415,12 +436,51 @@ def printaentry2(DB,execflag, execid = None):
         if flag == False:
             break
 
+def advancedprinting(DB, workdir):
+    #Idea for the advanced printing function
+    #1) Define the id's to be printed
+    print "+---+-------------------+"
+    print "| 1 | Single entry      |"
+    print "| 2 | Range of entrys   |"
+    print "| 3 | Print by criteria |"
+    print "| 4 | Print all         |"
+    print "+---+-------------------+"
+    mode = intinput('Choose Mode: ') 
+    #   1.1) Print single/range/all entrys
+    if mode == 1 or mode == 2 or mode == 4:
+        idlist = []
+        if mode != 4:
+            idlist.append(intinput("(First) ID to be printed: "))
+            if mode == 2:
+                for i in range(idlist[0]+1, intinput("Last ID to be printed: ")+1):
+                    idlist.append(i)
+        #Print all:
+        if len(idlist) == 0:
+            idlist =  DB.listbycriteria([]) #return a list with all ID's
+        #Now you got the list idlist, that has 1, all ID's between two given ID's or all ID's inside
+    #   1.2) Print by criteria
+    if mode == 3:
+        criterianum = intinput('Input the number of criteria: ')
+        criterialist = []
+        for i in range(0,criterianum):
+            print "No. ",i+1,"of",criterianum
+            criteria = raw_input('Input criteria: ')
+            criterialist.append(criteria)
+        idlist =  DB.listbycriteria(criterialist)
+    #2) Get from config, what should be printed
+    #In the MTFconfig module all operations on the config are defined. getconfigpart(dir,cfg)
+    #retuns a list corresponting to cfg.
+    pSpecs = MTFconfig.getconfigpart(workdir, "SpecsToPrint")
+    #3) Generate Header
+    #4) Print each entry with the in the config defined specs
+    
+
 
 
 
 def modifyaentry(DB):
     print "Modifying Mode"
-    mode = intinput('Mode? (1: Single entry, 2: Range of entrys, 3: List of entrys) ')
+    mode = intinput('Mode? (1: Single entry, 2: Range of entrys, 3: List of entrys, 4: Single entry multiple times) ')
     if mode == 1:
         entryid = intinput('Input ID of entry to modify: ')
         spec = raw_input('Input spec you whant to modify (Options: NAME, STUDIO, RATING,GENRE,INTERPRET): ')
@@ -440,6 +500,27 @@ def modifyaentry(DB):
                     newspec = newspec.replace(" ", "%")
                 listnum = intinput('Input the index you what to change in the speclist: ')
                 DB.modifyentry(spec,newspec, entryid, listnum, changehow)
+    elif mode == 4:
+        entryid = intinput('Input ID of entry to modify multiple times: ')
+        spec = ""
+        while(spec != "EXIT"):
+            spec = raw_input('Input spec you whant to modify (Options: NAME, STUDIO, RATING,GENRE,INTERPRET, EXIT): ')
+            if spec == "NAME" or spec == "STUDIO" or spec == "RATING":
+                newspec = raw_input('Input the new value of the choosen spec: ')
+                DB.modifyentry(spec, newspec, entryid)
+            elif spec == "GENRE" or spec == "INTERPRET":
+                changehow = raw_input('How should the Spec be changed (Options: APPEND, NEW, CHANGE)? ')
+                if changehow == "APPEND" or changehow == "NEW":
+                    newspec = raw_input('Input the new value of the choosen spec: ')
+                    if spec == "INTERPRET":
+                        newspec = newspec.replace(" ","%")
+                    DB.modifyentry(spec, newspec, entryid, None, changehow)
+                elif changehow == "CHANGE":
+                    newspec = raw_input('Input the new value of the choosen spec: ')
+                    if spec == "INTERPRET":
+                        newspec = newspec.replace(" ", "%")
+                    listnum = intinput('Input the index you what to change in the speclist: ')
+                    DB.modifyentry(spec,newspec, entryid, listnum, changehow)
     elif mode == 2:
         startid = intinput('Input ID of first entry to modify: ')
         endid = intinput('Input ID of last entry to modify: ')
