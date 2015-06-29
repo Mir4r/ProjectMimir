@@ -1,5 +1,5 @@
 #Frontend for usage of Project Mimir in Terminal
-# MTF (MimirTerminalFrontend) v0.3.0
+# MTF (MimirTerminalFrontend) v0.4.0
 #2014, K. Schweiger
 import backend
 import missingspecs
@@ -7,6 +7,9 @@ import os
 import random
 import time
 import MTFconfig
+import sharedfunctions
+from operator import itemgetter
+import colorprinting
 
 def makestring(symbol, lengths):
     string = ""
@@ -15,24 +18,24 @@ def makestring(symbol, lengths):
     return string
 
 def banner(database):
-    print makestring("-",132)
-    print makestring("-",55)+" Project Mimir "+backend.getVersion()+" "+makestring("-",55)
-    print makestring("-",132)
-    print "-"+makestring(" ",130)+"-"
-    print "-"+makestring(" ",5)+"Code | Name                 | Comments                                                                                       -"
-    print "-"+makestring(" ",5)+"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    -"
-    print "-"+makestring(" ",5)+"   0 | Exit                 |                                                                                                -"
-    print "-"+makestring(" ",5)+"   1 | Execute              | Opens the selected Entry in an external Applicatiom                                            -"
-    print "-"+makestring(" ",5)+"   2 | Modify               | Modify Name, Genres, Interprets, Studio and Rating. Genres and Interprets are Lists, so you    -"
-    print "-"+makestring(" ",10)+    " "+makestring(" ",22)+"| can Append and Modify Elements or overwrite the list                                           -"
-    print "-"+makestring(" ",5)+"   3 | Print Information    | Prints the informations of a given entry (Input: ID)                                           -"
-    print "-"+makestring(" ",5)+"   4 | Random !!!!          | Execute a Random Entry. If printed by criteria, execute one of these                           -"
-    print "-"+makestring(" ",5)+"   5 | Statistics           | Choose between different statistics                                                            -"
-    print "-"+makestring(" ",5)+"  42 | Help                 | Get a few informations and help                                                                -"
-    print "-"+makestring(" ",5)+"  99 | DB options           | Options for modifieing the DB                                                                  -"
-    print "-"+makestring(" ",130)+"-"
-    print "- "+str(database)+makestring(" ",118-len(database))+"MTF v0.3.0 -"
-    print makestring("-",132)
+    print makestring("-",140)
+    print makestring("-",59)+" Project Mimir "+backend.getVersion()+" "+makestring("-",59)
+    print makestring("-",140)
+    print "-"+makestring(" ",138)+"-"
+    print "-"+makestring(" ",7)+"Code | Name                 | Comments                                                                                             -"
+    print "-"+makestring(" ",7)+"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++      -"
+    print "-"+makestring(" ",7)+"   0 | Exit                 |                                                                                                      -"
+    print "-"+makestring(" ",7)+"   1 | Execute              | Opens the selected Entry in an external Applicatiom                                                  -"
+    print "-"+makestring(" ",7)+"   2 | Modify               | Modify Name, Genres, Interprets, Studio and Rating. Genres and Interprets are Lists, so you          -"
+    print "-"+makestring(" ",12)+    " "+makestring(" ",22)+"| can Append and Modify Elements or overwrite the list                                                 -"
+    print "-"+makestring(" ",7)+"   3 | Print Information    | Prints the informations of a given entry (Input: ID)                                                 -"
+    print "-"+makestring(" ",7)+"   4 | Random !!!!          | Execute a Random Entry. If printed by criteria, execute one of these                                 -"
+    print "-"+makestring(" ",7)+"   5 | Statistics           | Choose between different statistics                                                                  -"
+    print "-"+makestring(" ",7)+"  42 | Help                 | Get a few informations and help                                                                      -"
+    print "-"+makestring(" ",7)+"  99 | DB options           | Options for modifieing the DB                                                                        -"
+    print "-"+makestring(" ",138)+"-"
+    print "- "+str(database)+makestring(" ",126-len(database))+"MTF v0.4.0 -"
+    print makestring("-",140)
 
 def intinput(string):
     flag = False
@@ -52,7 +55,8 @@ def DBoptions(DB, DBexists, directory):
     print "| 3 | Remove Entrys/Find new Fils    |"
     print "| 4 | Check for changed Directorys   |"
     print "| 5 | Save DB                        |"
-    print "| 6 | Add new specs tothe DB         |"
+    print "| 6 | Add new specs to the DB        |"
+    print "| 7 | Remove a File                  |"
     print "+---+--------------------------------+"
     Code = intinput("Choose Mode: ")
     if Code == 1:
@@ -61,7 +65,7 @@ def DBoptions(DB, DBexists, directory):
             DB = backend.database(0,directory)
             DBexists = True
         else:
-            print "There is already a Database" 
+            print "There is already a Database"
             raw_input('Input anything to go on')
     elif Code == 2:
         if DBexists == False:
@@ -74,7 +78,7 @@ def DBoptions(DB, DBexists, directory):
             else:
                 DBexists = True
         else:
-            print "There is already a Database" 
+            print "There is already a Database"
             raw_input('Input anything to go on')
     elif Code == 3:
         if DBexists == True:
@@ -89,6 +93,7 @@ def DBoptions(DB, DBexists, directory):
             print "There is no DB yet"
     elif Code == 5:
         if DBexists == True:
+            sharedfunctions.backupfile(directory, 'main.db')
             DB.saveDB()
         else:
             print "There is no DB yet"
@@ -97,6 +102,16 @@ def DBoptions(DB, DBexists, directory):
             missingspecs.main(directory)
             del DB
             DB = backend.database(1,directory)
+        else:
+            print "There is no DB yet"
+    elif Code == 7:
+        if DBexists == True:
+            rmid = intinput("Input ID of Entry, that should be removed from the filesystem: ")
+            path = DB.entrys[rmid].getSpec("PATH")
+            print "\nYou want to remove:"
+            printaentry2(DB, True, rmid)
+            print ""
+            sharedfunctions.removefile(path)
         else:
             print "There is no DB yet"
     else:
@@ -138,7 +153,7 @@ def findmaxSpeclen(DB, IDlist, specname):
     maxlenlist = [maxSpeclen]
     maxlenlist = maxlenlist + maxSinglelen
     return  maxlenlist
-    
+
 
 
 def execute(DB):
@@ -148,7 +163,7 @@ def execute(DB):
     print "Now playing:",DB.entrys[idtoexecute].getSpec("NAME")
     DB.runentry(idtoexecute)
     DB.entryopened(idtoexecute)
-    
+
 def executeranlist(DB, idlist):
     if idlist == "all":
         idtoexecute = random.randint(0, DB.getnumberofentrys())
@@ -159,8 +174,8 @@ def executeranlist(DB, idlist):
         listentry = random.randint(0, len(idlist)-1)
         printaentry2(DB, True, idlist[listentry])
         DB.runentry(idlist[listentry])
-        DB.entryopened(listentry)
-    
+        DB.entryopened(idlist[listentry])
+
 
 def searchnewfiles(DB):
     directory = raw_input('Input directory where database file is located:')
@@ -168,13 +183,14 @@ def searchnewfiles(DB):
 
 
 def changeddirs(DB, StartDir):
-    DB.changedpaths(StartDir)
-    print " "
+    changed = DB.changedpaths(StartDir)
+    for i in range(len(changed)):
+                print colorprinting.blue(changed[i][0])," was at ", colorprinting.red(changed[i][1])," and is now at ",colorprinting.green(changed[i][2])
     raw_input('press anything')
 
-def getentrysbydate(DB,flag):
+def getentrysbydate(DB,flag,num):
     flaglist = ["LASTMOD","ADDED","OPENED"]
-    numtolist = 15
+    numtolist = num
     date = [00,00,00,00,00,00]
     order = [2,1,0,3,4,5]
     numofentrys = DB.getnumberofentrys()
@@ -220,6 +236,7 @@ def getentrysbydate(DB,flag):
             idlist.append(int(newid))
     return idlist
 
+
 def printaentry2(DB,execflag, execid = None):
     execflag = 1
     if execid != None:
@@ -256,12 +273,8 @@ def printaentry2(DB,execflag, execid = None):
         jump = True
     elif mode == 3:
         print "Print by Criteria"
-        criterianum = intinput('Input the number of criteria: ')
-        criterialist = []
-        for i in range(0,criterianum):
-            print i+1,"of",criterianum
-            criteria = raw_input('Input criteria: ')
-            criterialist.append(criteria)
+        criteriastr = raw_input('Type criteria seperated by spaces: ')
+        criterialist = criteriastr.split(" ")
         idlist =  DB.listbycriteria(criterialist)
         jump = True
         criteriaprint = True
@@ -269,13 +282,13 @@ def printaentry2(DB,execflag, execid = None):
         idlist =  DB.listbycriteria([])
         jump = True
     elif mode == 5:
-        idlist = getentrysbydate(DB,"ADDED")
+        idlist = getentrysbydate(DB,"ADDED",15)
         jump = True
     elif mode == 6:
-        idlist = getentrysbydate(DB,"LASTMOD")
+        idlist = getentrysbydate(DB,"LASTMOD",15)
         jump = True
     elif mode == 7:
-        idlist = getentrysbydate(DB,"OPENED")
+        idlist = getentrysbydate(DB,"OPENED",15)
         jump = True
 
     else:
@@ -344,7 +357,7 @@ def printaentry2(DB,execflag, execid = None):
             numprint = DB.entrys[i].numopened
             if int(numprint) <= 9 and lengths[3][0] > 1:
                 numprint = " "+numprint
-            numflag = True            
+            numflag = True
             if lengths == None:
                 printedstring = idprint+"  "+nameprint+"  "
                 if genreflag == True:
@@ -412,7 +425,7 @@ def printaentry2(DB,execflag, execid = None):
                 if openedflag == False:
                     printedopened = "|" + makestring(" ",lengths[4][0])
                 printedstring = printedstring + printedopened
-            print printedstring            
+            print printedstring
         #raw_input('Input anything to go on')
     else:
         raw_input('Invalid Mode. Press key to continue')
@@ -439,13 +452,16 @@ def printaentry2(DB,execflag, execid = None):
 def advancedprinting(DB, workdir):
     #Idea for the advanced printing function
     #1) Define the id's to be printed
-    print "+---+-------------------+"
-    print "| 1 | Single entry      |"
-    print "| 2 | Range of entrys   |"
-    print "| 3 | Print by criteria |"
-    print "| 4 | Print all         |"
-    print "+---+-------------------+"
-    mode = intinput('Choose Mode: ') 
+    print "+---+--------------------------+"
+    print "| 1 | Single entry             |"
+    print "| 2 | Range of entrys          |"
+    print "| 3 | Print by criteria        |"
+    print "| 4 | Print all                |"
+    print "| 5 | Print by Date Added      |"
+    print "| 6 | Print by Date Modified   |"
+    print "| 7 | Print by Date Opened     |"
+    print "+---+--------------------------+"
+    mode = intinput('Choose Mode: ')
     #   1.1) Print single/range/all entrys
     if mode == 1 or mode == 2 or mode == 4:
         idlist = []
@@ -461,26 +477,54 @@ def advancedprinting(DB, workdir):
     #   1.2) Print by criteria
     if mode == 3:
         criterianum = intinput('Input the number of criteria: ')
-        criterialist = []
-        for i in range(0,criterianum):
-            print "No. ",i+1,"of",criterianum
-            criteria = raw_input('Input criteria: ')
-            criterialist.append(criteria)
+        criteriastr = raw_input('Type criteria seperated by spaces: ')
+        criterialist = criteriastr.split(" ")
         idlist =  DB.listbycriteria(criterialist)
+    #   1.3) print by Dates
+    if mode == 5 or mode == 6 or mode == 7:
+        numtoprint = MTFconfig.getconfigpart(workdir, "NumToPrint")
+        if mode == 5:
+            printby = "ADDED"
+        if mode == 6:
+            printby = "LASTMOD"
+        if mode == 7:
+            printby = "OPENED"
+        idlist = getentrysbydate(DB,printby,numtoprint)
     #2) Get from config, what should be printed
     #In the MTFconfig module all operations on the config are defined. getconfigpart(dir,cfg)
     #retuns a list corresponting to cfg.
-    pSpecs = MTFconfig.getconfigpart(workdir, "SpecsToPrint")
+    pSpecs = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "SpecsToPrint")
+    #print pSpecs
+    #print idlist
+    #find maximal length of printed specs
+    lengths = []
+    for spec in pSpecs:
+        #print spec
+        lengths.append(findmaxSpeclen(DB,idlist,spec))
+    for i in range(len(pSpecs)):
+        if lengths[i][0] <= len(pSpecs[i]):
+            lengths[i][0] = len(pSpecs[i])
+    #print lengths
     #3) Generate Header
+    sSpecs = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "SpecsToShow")
+    #Hier muss  ich noch schauen, ob ich den Header nicht dynamischer Generiere
+    header = "ID"+makestring(" ",3)+"NAME"+makestring(" ",17)
+    subheader = makestring("-",3)+makestring(" ",2)+makestring("-",21)+makestring("+",1)
+    for i in range(len(lengths)):
+        if lengths[i][0] != 0:
+            header = header+"|"+SpecsPrinted[i]+makestring(" ",lengths[i][0]-len(SpecsPrinted[i]))
+            subheader = subheader + makestring("-",lengths[i][0])+makestring("+",1)
+    print header
+    print subheader
     #4) Print each entry with the in the config defined specs
-    
+
 
 
 
 
 def modifyaentry(DB):
     print "Modifying Mode"
-    mode = intinput('Mode? (1: Single entry, 2: Range of entrys, 3: List of entrys, 4: Single entry multiple times) ')
+    mode = intinput('Mode? (1: Single entry, 2: Range of entrys, 3: List of entrys, 4: Single entry multiple times, 5: Change per Interpret) ')
     if mode == 1:
         entryid = intinput('Input ID of entry to modify: ')
         spec = raw_input('Input spec you whant to modify (Options: NAME, STUDIO, RATING,GENRE,INTERPRET): ')
@@ -500,6 +544,26 @@ def modifyaentry(DB):
                     newspec = newspec.replace(" ", "%")
                 listnum = intinput('Input the index you what to change in the speclist: ')
                 DB.modifyentry(spec,newspec, entryid, listnum, changehow)
+    elif mode == 5:
+        print "Input a Interpret and change a Genre for all matching entries"
+        interpretstr = raw_input("Interpret? ")
+        interpretlist = interpretstr.split(" ")
+        idlist = DB.listbycriteria(interpretlist)
+        if idlist == []:
+            print "There is no interpret like this. Try again."
+        else:
+            genre = raw_input('Input genre you want to add: ')
+            #changehow = raw_input('How should the genre be added (Options: APPEND, NEW)? ')
+            for aid in idlist:
+                changehow = "APPEND"
+                gflag = True
+                for ex_genre in DB.entrys[aid].genre:
+                    if ex_genre == genre:
+                        gflag = False
+                    if ex_genre == "nogenre":
+                        changehow = "NEW"
+                if gflag:
+                    DB.modifyentry("GENRE", genre, aid, None, changehow)
     elif mode == 4:
         entryid = intinput('Input ID of entry to modify multiple times: ')
         spec = ""
@@ -555,7 +619,7 @@ def modifyaentry(DB):
                     listnum = intinput('Input the index you what to change in the speclist: ')
                     for i in range(startid, endid+1):
                         DB.modifyentry(spec,newspec, i, listnum, changehow)
-                else: 
+                else:
                     raw_input('Wrong spec reference! Press any key to contionue')
             elif submode == 1:
                 subsubmode = intinput('Should the spec always be changes in the same way?0: Yes, 1: No' )
@@ -576,7 +640,7 @@ def modifyaentry(DB):
                             if spec == "INTERPRET":
                                 newspec = newspec.replace(" ", "%")
                             DB.modifyentry(spec,newspec, startid, listnum, changehow)
-                    else: 
+                    else:
                         raw_input('Wrong spec reference! Press any key to contionue')
                 elif subsubmode == 1:
                     for i in range(startid, endid+1):
@@ -593,7 +657,7 @@ def modifyaentry(DB):
                                 newspec = newspec.replace(" ", "%")
                             listnum = intinput('Input the index you what to change in the speclist: ')
                             DB.modifyentry(spec,newspec, startid, listnum, changehow)
-                        else: 
+                        else:
                             raw_input('Wrong spec reference! Press any key to contionue')
     elif mode == 3:
         print "Input IDs. To stop type -1"
@@ -624,7 +688,7 @@ def modifyaentry(DB):
                     if spec == "INTERPRET":
                         newspec = newspec.replace(" ", "%")
                     for ids in idlist:
-                        DB.modifyentry(spec, newspec, ids, None, None, changehow)
+                        DB.modifyentry(spec, newspec, ids, None, changehow)
             if submode == "1":
                 changehow = raw_input('How should the Spec be changed (Options: APPEND, NEW)? ')
                 if changehow == "APPEND" or changehow == "NEW":
@@ -633,7 +697,7 @@ def modifyaentry(DB):
                         newspec = raw_input('Input the new value for the choosen spec: ')
                         if spec == "INTERPRET":
                             newspec = newspec.replace(" ", "%")
-                        DB.modifyentry(spec, newspec, ids, None, None, changehow)
+                        DB.modifyentry(spec, newspec, ids, None, changehow)
             """
             elif changehow == "CHANGE":
                 newspec = raw_input('Input the new value of the choosen spec: ')
@@ -684,7 +748,7 @@ def statisticsmode(DB):
     studionumlist = []
     ratinglist = []
     ratingnumlist = []
-    
+    genre2Dlist = []
     for i in range(0,numofentrys):
         if mode == 1:
             tmpgenre = DB.entrys[i].getSpec("GENRE")
@@ -745,13 +809,16 @@ def statisticsmode(DB):
             if flag == False:
                 ratingnumlist[rememberindex] = ratingnumlist[rememberindex] + 1
     if mode == 1:
+        for k in range(len(genrelist)):
+                genre2Dlist.append([genrelist[k],genrenumlist[k]])
+        genre2Dlist = sorted(genre2Dlist, key=itemgetter(1), reverse=True)
         maxlen = 0
         for i in genrelist:
             if len(i) >= maxlen:
                 maxlen = len(i)
         for i in range(len(genrelist)):
-            emptyspace = maxlen - len(genrelist[i])
-            print "-"+makestring(" ",5)+genrelist[i]+makestring(" ",emptyspace)+" | "+str(genrenumlist[i])
+            emptyspace = maxlen - len(genre2Dlist[i][0])
+            print "-"+makestring(" ",5)+genre2Dlist[i][0]+makestring(" ",emptyspace)+" | "+str(genre2Dlist[i][1])
         print "-"+makestring(" ",130)+"-"
         print "-"+makestring(" ",130)+"-"
     if mode == 2:
@@ -787,18 +854,19 @@ def statisticsmode(DB):
    #print studiolist, studionumlist
    #print ratinglist, ratingnumlist
     raw_input('press anything')
-    
+
 
 
 
 def main():
-    os.system("resize -s 43 132")
+    os.system("resize -s 43 140")
     Code = 999
     DBexists = False
     ignore = False
     criteriaprint = False
     directory = ""
     DBexists = True
+    marked = []
     while(Code != 0):
         os.system("clear")
         banner(directory)
@@ -812,7 +880,7 @@ def main():
                 DB = backend.database(0,directory)
                 DBexists = True
             else:
-                print "There is already a Database" 
+                print "There is already a Database"
                 raw_input('Input anything to go on')
         elif Code == 96:
             if DBexists == False:
@@ -825,7 +893,7 @@ def main():
                 else:
                     DBexists = True
             else:
-                print "There is already a Database" 
+                print "There is already a Database"
                 raw_input('Input anything to go on')
         """
         if DBexists == True:
@@ -842,9 +910,11 @@ def main():
                     executeranlist(DB, "all")
             if Code == 5:
                 statisticsmode(DB)
+            if Code == 9:
+                advancedprinting(DB, "")
             if Code == 0:
                 print "Exiting!"
-                os.system("clear")   
+                os.system("clear")
         elif Code == 0:
             print "Exiting!"
             os.system("clear")

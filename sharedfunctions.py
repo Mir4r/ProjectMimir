@@ -19,15 +19,31 @@ def readFile(directory, filename):
     lines = inputfile.split("\n")
     return lines
 
-def savefile(directory, filename, backupflag):
+def savefile(directory, filename, backupflag, dbflag):
     if backupflag == True:
         backupfile(directory, filename)
     print "Saving file..."
-    
+
 
 def backupfile(directory, filename):
     print "Backing up file..."
-    os.system("cp "+os.path.join(directory, filename)+" "+filename+".backup")
+    os.system("cp "+os.path.join(directory, filename)+" "+os.path.join(directory,filename+".backup"))
+def removefile(path):
+    print "Removing file: "+path
+    flag = False
+    while(flag == False):
+        question = raw_input("Are you shure? Type Yes or No: ")
+        if question == "Yes":
+            flag = True
+            os.system("rm "+path)
+            print path+" was removed"
+            raw_input("Press any key")
+        elif question == "No":
+            print path+" was not removed"
+            flag = True
+            raw_input("Press any key")
+        else:
+            print "Please type Yes or No"
 
 
 def gettime(flag):

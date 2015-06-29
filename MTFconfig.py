@@ -14,6 +14,10 @@ def configreader(workdir):
         if len(line) > 0 and line[0] != "#":
             if line[0:10] == "printspec=":
                 config.append(line[10::].split(","))
+            elif line[0:9] == "showspec=":
+                config.append(line[9::].split(","))
+            elif line[0:11] == "numtoprint=":
+                config.append(int(line[11::]))
     return config
 
 
@@ -21,3 +25,7 @@ def getconfigpart(workdir, cfg):
     config = configreader(workdir)
     if cfg == "SpecsToPrint":
         return config[0]
+    elif cfg == "SpecsToShow":
+        return config[1]
+    elif cfg == "NumToPrint":
+        return config[2]

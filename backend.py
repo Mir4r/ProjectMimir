@@ -7,6 +7,7 @@ import os
 from glob import glob
 import time
 import missingspecs
+import colorprinting
 
 def getVersion():
     return "v0.3.3"
@@ -18,9 +19,15 @@ def gettime(flag):
     lt = time.localtime()
     if flag == "date":
         if int(lt[2]) <= 9:
-            dateres = "0"+str(lt[2])+"."+str(lt[1])+"."+str(lt[0]-2000)
+            if int(lt[1])<= 9:
+                   dateres = "0"+str(lt[2])+".0"+str(lt[1])+"."+str(lt[0]-2000)
+            else:
+                   dateres = "0"+str(lt[2])+"."+str(lt[1])+"."+str(lt[0]-2000)
         else:
-            dateres = str(lt[2])+"."+str(lt[1])+"."+str(lt[0]-2000)
+            if int(lt[1]) <= 9:
+                   dateres = str(lt[2])+".0"+str(lt[1])+"."+str(lt[0]-2000)
+            else:
+                   dateres = str(lt[2])+"."+str(lt[1])+"."+str(lt[0]-2000)
         return dateres
     elif flag == "time":
         timeres = str(lt[3])+":"+str(lt[4])+":"+str(lt[5])
@@ -125,14 +132,16 @@ class database:
         #filelist contains the paths to the files
         self.filelist = []
         for d in self.dirs:
-            self.filelist = self.filelist + self.getfiles(d)         
+            self.filelist = self.filelist + self.getfiles(d)
+        returnlist = []
         for j in range(len(changedlistid)):
             self.name = os.path.basename(changedlistpath[j]) #Filename of files, that have changed location
             for i in range(len(self.filelist)):
                 if os.path.basename(self.filelist[i]) == self.name:
                     self.entrys[int(changedlistid[j])].changeSpec("PATH",self.filelist[i])
-                    print changedlistid[j]," was at ", changedlistpath[j], " and is now at ",self.filelist[i]
-
+                    #print changedlistid[j]," was at ", colorprinting.red(changedlistpath[j]), colorprinting.blue(" and is now at "),colorprinting.green(self.filelist[i])
+                    returnlist.append([changedlistid[j],changedlistpath[j],self.filelist[i]])
+        return returnlist
     #Read the Database file and returns a list of the lines in the file
     def readDB(self, directory):
         print "ReadDB"
@@ -243,7 +252,7 @@ class database:
                 self.insertedflag = False
                 for i in range(len(self.entrys)):
                     if i != int(self.entrys[i].getSpec("ID")):
-                        print i, self.entrys[i].getSpec("ID")
+                        print "Inserted with ID:",i
                         self.entrys.insert(i, entry(None,i,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "nogenre","nointerpret","nostudio","notrated","neveropened",gettime("datetime"),str(0),"nevermod"))
                         self.insertedflag = True
                         break
@@ -251,7 +260,7 @@ class database:
                     self.id = len(self.entrys) 
                     self.entrys.append(entry(None,self.id,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "nogenre","nointerpret","nostudio","notrated","neveropened",gettime("datetime"),str(0),"nevermod"))
                     self.insertedflag = False
-                    print "anhaengen",self.id
+                    print "Appended with ID:",self.id
 #                return self.insertedflag
         return self.insertedflag
     def runentry(self, entryid):
