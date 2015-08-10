@@ -1,6 +1,6 @@
 #Frontend for usage of Project Mimir in Terminal
 # MTF (MimirTerminalFrontend) v0.4.0
-#2014, K. Schweiger
+#2014-2015, K. Schweiger
 import backend
 import missingspecs
 import os
@@ -10,6 +10,7 @@ import MTFconfig
 import sharedfunctions
 from operator import itemgetter
 import colorprinting
+import sys
 
 def makestring(symbol, lengths):
     string = ""
@@ -34,7 +35,7 @@ def banner(database):
     print "-"+makestring(" ",7)+"  42 | Help                 | Get a few informations and help                                                                      -"
     print "-"+makestring(" ",7)+"  99 | DB options           | Options for modifieing the DB                                                                        -"
     print "-"+makestring(" ",138)+"-"
-    print "- "+str(database)+makestring(" ",126-len(database))+"MTF v0.4.0 -"
+    print "- "+str(database)+makestring(" ",126-len(database))+"MTF v0.4.2 -"
     print makestring("-",140)
 
 def intinput(string):
@@ -164,18 +165,22 @@ def execute(DB):
     DB.runentry(idtoexecute)
     DB.entryopened(idtoexecute)
 
-def executeranlist(DB, idlist):
+def executeranlist(DB, idlist, played):
     if idlist == "all":
         idtoexecute = random.randint(0, DB.getnumberofentrys())
         printaentry2(DB, True, idtoexecute)
         DB.runentry(idtoexecute)
         DB.entryopened(idtoexecute)
     else:
-        listentry = random.randint(0, len(idlist)-1)
+        playedflag = False
+        while(playedflag == False):
+            listentry = random.randint(0, len(idlist)-1)
+            if listentry not in played:
+                playedflag = True
         printaentry2(DB, True, idlist[listentry])
         DB.runentry(idlist[listentry])
         DB.entryopened(idlist[listentry])
-
+        return listentry
 
 def searchnewfiles(DB):
     directory = raw_input('Input directory where database file is located:')
@@ -243,6 +248,7 @@ def printaentry2(DB,execflag, execid = None):
         if execflag == True:
             mode = 0
     else:
+        played = []
         print "Printing Mode"
         jump = False
         criteriaprint = False
@@ -440,10 +446,13 @@ def printaentry2(DB,execflag, execid = None):
             printaentry2(DB, False, None)
 #            flag = printaentry2(DB)
         if execflag == 4:
-            if criteriaprint == True:
-                executeranlist(DB, idlist)
-            else:
-                executeranlist(DB, "all")
+            #if criteriaprint == True:
+            ranid = executeranlist(DB, idlist, played)
+            played.append(ranid)
+            if len(played) == len(idlist):
+                played = []
+            #else:
+            #    executeranlist(DB, "all")
         if execflag == 0:
             return False
         if flag == False:
@@ -864,38 +873,39 @@ def main():
     DBexists = False
     ignore = False
     criteriaprint = False
-    directory = ""
-    DBexists = True
+    directory = "" #add
+    DBexists = False #add
+    if len(sys.argv) >= 2:
+        print "Hallo"
+        directory = sys.argv[1]
+        DB = backend.database(1,directory)
+        if DB.worked == False:
+            raw_input("Please press a key")
+            ignore = True
+        else:
+            DBexists = True
     marked = []
     while(Code != 0):
         os.system("clear")
         banner(directory)
         Code = intinput('Input Code: ')
         if Code == 99:
-            DBexists = DBoptions(DB, DBexists, directory)
-        """
-        if Code == 95:
-            if DBexists == False:
-                directory = raw_input('Input starting directory:')
-                DB = backend.database(0,directory)
-                DBexists = True
-            else:
-                print "There is already a Database"
-                raw_input('Input anything to go on')
-        elif Code == 96:
-            if DBexists == False:
-                ignore = False
-                directory = raw_input('Input directory where database file is located: ')
-                DB = backend.database(1,directory)
-                if DB.worked == False:
-                    raw_input("Please press a key")
-                    ignore = True
-                else:
+            if DBexists == True:
+                DBexists = DBoptions(DB, DBexists, directory)
+            elif DBexists == False:
+                inp = raw_input("Is the DB already created? Yes/No")
+                if inp == "Yes":
+                    directory = raw_input('Input directory where database file is located: ')
+                    DB = backend.database(1,directory)
+                    if DB.worked == False:
+                        raw_input("Please press a key")
+                        ignore = True
+                    else:
+                        DBexists = True
+                elif inp =="No":
+                    directory = raw_input('Input starting directory:')
+                    DB = backend.database(0,directory)
                     DBexists = True
-            else:
-                print "There is already a Database"
-                raw_input('Input anything to go on')
-        """
         if DBexists == True:
             if Code == 1:
                 execute(DB)

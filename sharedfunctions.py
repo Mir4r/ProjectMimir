@@ -1,7 +1,8 @@
 #Functions and stuff, that is needed by different parts of Project Mimir
-#2014, K. Schweiger
+#2015, K. Schweiger
 import os
 import sys
+import time
 
 def readFile(directory, filename):
     charset = sys.getfilesystemencoding()
@@ -27,7 +28,7 @@ def savefile(directory, filename, backupflag, dbflag):
 
 def backupfile(directory, filename):
     print "Backing up file..."
-    os.system("cp "+os.path.join(directory, filename)+" "+os.path.join(directory,filename+".backup"))
+    os.system("cp "+os.path.join(directory, filename)+" "+os.path.join(directory,filename+"-"+gettime("date")+".backup"))
 def removefile(path):
     print "Removing file: "+path
     flag = False

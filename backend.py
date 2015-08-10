@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#2014, Korbinian Schweiger
+#2014-2015, Korbinian Schweiger
 
 
 import sys
@@ -35,7 +35,7 @@ def gettime(flag):
     elif flag == "datetime":
         res = gettime("date")+"|"+gettime("time")
         return res
-        
+
 def makestring(symbol, lengths):
     string = ""
     for i in range(0,lengths):
@@ -56,7 +56,7 @@ class database:
             #filelist contains the paths to the files
             self.filelist = []
             for d in self.dirs:
-                self.filelist = self.filelist + self.getfiles(d) 
+                self.filelist = self.filelist + self.getfiles(d)
             #print self.filelist
             self.id = 0
             for foundfiles in self.filelist:
@@ -73,7 +73,7 @@ class database:
                     self.specs = lines.split(" ")
                     self.entrys.append(entry(self.specs))
             else:
-               self.worked = False 
+               self.worked = False
     #Method for finding all Directorys in the given Directory
     #in the end you get a list with als subdirectorys and the starting directory
     def dirfinder(self, directory):
@@ -163,7 +163,7 @@ class database:
         return self.lines
     def addentry(self, name, path, genre, interpret, studio,rating):
         print "A new Entry will be added to the DB"
-        self.id = len(self.entrys) 
+        self.id = len(self.entrys)
         self.entrys.append(entry(None,self.id,name,path,genre,interpret,studio,rating,opened,added,numopened,lastmod))
 
     def modifyentry(self, changewhat, change, startid, changeindex = None, changehow = None):
@@ -257,14 +257,14 @@ class database:
                         self.insertedflag = True
                         break
                 if self.insertedflag == False:
-                    self.id = len(self.entrys) 
+                    self.id = len(self.entrys)
                     self.entrys.append(entry(None,self.id,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "nogenre","nointerpret","nostudio","notrated","neveropened",gettime("datetime"),str(0),"nevermod"))
                     self.insertedflag = False
                     print "Appended with ID:",self.id
 #                return self.insertedflag
         return self.insertedflag
     def runentry(self, entryid):
-        os.system("vlc -q --one-instance "+str(self.entrys[entryid].getSpec("PATH"))+" 2> /dev/null &") 
+        os.system("vlc -q --one-instance "+str(self.entrys[entryid].getSpec("PATH"))+" 2> /dev/null &")
     def getnumberofentrys(self):
         return len(self.entrys)
     def sortentrys(self):
@@ -307,7 +307,7 @@ class entry:
             self.lastmod=lastmod
         else:
             self.genre = []
-            self.interpret = []        
+            self.interpret = []
             for num in specs:
                 self.spec = num.split('$')
                 if self.spec[0] == "ID":
@@ -319,7 +319,7 @@ class entry:
                 if self.spec[0] == "GENRE":
                     self.genre.append(self.spec[1])
                 if self.spec[0] == "INTERPRET":
-                    self.interpret.append(self.spec[1])  
+                    self.interpret.append(self.spec[1])
                 if self.spec[0] == "STUDIO":
                     self.studio = self.spec[1]
                 if self.spec[0] == "RATING":
@@ -359,7 +359,7 @@ class entry:
                     return False
             #if given how is no valid option, report error
             else:
-                return  False    
+                return  False
         elif what == "INTERPRET":
             if how == "APPEND":
                 self.interpret.append(newSpec)
@@ -413,9 +413,9 @@ class entry:
         if what == "STUDIO$" or what == "STUDIO":
             return self.studio
         if what == "RATING$" or what == "RATING":
-            return self.rating        
+            return self.rating
         if what == "OPENED$" or what == "OPENED":
-            return self.opened 
+            return self.opened
         if what == "ADDED$" or what == "ADDED":
             return self.added
         if what == "NUMOPENED$" or what == "NUMOPENED":
@@ -525,15 +525,12 @@ class entry:
 
 def main():
     DB1 = database(0,sys.argv[1])
-    for i in range(len(DB1.entrys)): 
+    for i in range(len(DB1.entrys)):
         DB1.entrys[i].printentry()
     raw_input('taste druecken')
     DB1.removeentrys()
-    for i in range(len(DB1.entrys)): 
+    for i in range(len(DB1.entrys)):
         DB1.entrys[i].printentry()
 
 if __name__ == '__main__':
     main()
-
-
-
