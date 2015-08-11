@@ -1035,14 +1035,14 @@ def main():
                 modifyaentry(DB)
             if Code == 3:
                 printaentry2(DB, False, None)
-            if Code == 9:
+            if Code == 4:
                 if criteriaprint == True:
                     executeranlist(DB, idlist)
                 else:
                     executeranlist(DB, "all")
             if Code == 5:
                 statisticsmode(DB)
-            if Code == 4:
+            if Code == 9:
                 advancedprinting(DB, "")
             if Code == 0:
                 print "Exiting!"
