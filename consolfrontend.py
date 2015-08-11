@@ -12,6 +12,15 @@ from operator import itemgetter
 import colorprinting
 import sys
 
+#define width of the terminal window
+def getwidth():
+    return 140
+
+#define height of the terminal window
+def getheight():
+    return 43
+
+#function, to generate a string of a LENGHTS, that contains only SYMBOL
 def makestring(symbol, lengths):
     string = ""
     for i in range(0,lengths):
@@ -19,10 +28,10 @@ def makestring(symbol, lengths):
     return string
 
 def banner(database):
-    print makestring("-",140)
-    print makestring("-",59)+" Project Mimir "+backend.getVersion()+" "+makestring("-",59)
-    print makestring("-",140)
-    print "-"+makestring(" ",138)+"-"
+    print makestring("-",getwidth())
+    print makestring("-",(getwidth()/2)-11)+" Project Mimir "+backend.getVersion()+" "+makestring("-",(getwidth()/2)-11)
+    print makestring("-",getwidth())
+    print "-"+makestring(" ",getwidth()-2)+"-"
     print "-"+makestring(" ",7)+"Code | Name                 | Comments                                                                                             -"
     print "-"+makestring(" ",7)+"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++      -"
     print "-"+makestring(" ",7)+"   0 | Exit                 |                                                                                                      -"
@@ -34,9 +43,9 @@ def banner(database):
     print "-"+makestring(" ",7)+"   5 | Statistics           | Choose between different statistics                                                                  -"
     print "-"+makestring(" ",7)+"  42 | Help                 | Get a few informations and help                                                                      -"
     print "-"+makestring(" ",7)+"  99 | DB options           | Options for modifieing the DB                                                                        -"
-    print "-"+makestring(" ",138)+"-"
-    print "- "+str(database)+makestring(" ",126-len(database))+"MTF v0.4.2 -"
-    print makestring("-",140)
+    print "-"+makestring(" ",getwidth()-2)+"-"
+    print "- "+str(database)+makestring(" ",getwidth()-14-len(database))+"MTF v0.5.0 -"
+    print makestring("-",getwidth())
 
 def intinput(string):
     flag = False
@@ -126,6 +135,8 @@ def findmaxSpeclen(DB, IDlist, specname):
     maxSpeclen = 0
     maxSinglelen = []
     maxlenid = 0
+    NLen = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "MaxNameLen")
+    DAcc = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "DateAcc")
     for i in IDlist:
         tmpSinglelen = []
         spec = DB.entrys[i].getSpec(specname)
@@ -145,7 +156,16 @@ def findmaxSpeclen(DB, IDlist, specname):
             tmplen = comblen
         #if the spec is no list, just get lengths of the spec
         else:
+            #print spec
             tmplen = len(spec)
+            if specname == "NAME":
+                #print "hallo"
+                #print tmplen
+                tmplen = NLen
+            if specname == "OPENED":
+                if DAcc == "short":
+                    tmplen = 8
+            #print tmplen
         #look if the spec is the longest
         if tmplen > maxSpeclen:
             maxSpeclen = tmplen
@@ -153,6 +173,8 @@ def findmaxSpeclen(DB, IDlist, specname):
             maxSinglelen = tmpSinglelen
     maxlenlist = [maxSpeclen]
     maxlenlist = maxlenlist + maxSinglelen
+    #print "maxlenlist: "
+    #print maxlenlist
     return  maxlenlist
 
 
@@ -459,6 +481,7 @@ def printaentry2(DB,execflag, execid = None):
             break
 
 def advancedprinting(DB, workdir):
+    execflag = 1
     #Idea for the advanced printing function
     #1) Define the id's to be printed
     print "+---+--------------------------+"
@@ -473,6 +496,7 @@ def advancedprinting(DB, workdir):
     mode = intinput('Choose Mode: ')
     #   1.1) Print single/range/all entrys
     if mode == 1 or mode == 2 or mode == 4:
+        jump = False
         idlist = []
         if mode != 4:
             idlist.append(intinput("(First) ID to be printed: "))
@@ -485,12 +509,14 @@ def advancedprinting(DB, workdir):
         #Now you got the list idlist, that has 1, all ID's between two given ID's or all ID's inside
     #   1.2) Print by criteria
     if mode == 3:
+        jump = False
         criterianum = intinput('Input the number of criteria: ')
         criteriastr = raw_input('Type criteria seperated by spaces: ')
         criterialist = criteriastr.split(" ")
         idlist =  DB.listbycriteria(criterialist)
     #   1.3) print by Dates
     if mode == 5 or mode == 6 or mode == 7:
+        jump = False
         numtoprint = MTFconfig.getconfigpart(workdir, "NumToPrint")
         if mode == 5:
             printby = "ADDED"
@@ -499,35 +525,131 @@ def advancedprinting(DB, workdir):
         if mode == 7:
             printby = "OPENED"
         idlist = getentrysbydate(DB,printby,numtoprint)
-    #2) Get from config, what should be printed
-    #In the MTFconfig module all operations on the config are defined. getconfigpart(dir,cfg)
-    #retuns a list corresponting to cfg.
-    pSpecs = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "SpecsToPrint")
-    #print pSpecs
-    #print idlist
-    #find maximal length of printed specs
-    lengths = []
-    for spec in pSpecs:
-        #print spec
-        lengths.append(findmaxSpeclen(DB,idlist,spec))
-    for i in range(len(pSpecs)):
-        if lengths[i][0] <= len(pSpecs[i]):
-            lengths[i][0] = len(pSpecs[i])
-    #print lengths
-    #3) Generate Header
-    sSpecs = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "SpecsToShow")
-    #Hier muss  ich noch schauen, ob ich den Header nicht dynamischer Generiere
-    header = "ID"+makestring(" ",3)+"NAME"+makestring(" ",17)
-    subheader = makestring("-",3)+makestring(" ",2)+makestring("-",21)+makestring("+",1)
-    for i in range(len(lengths)):
-        if lengths[i][0] != 0:
-            header = header+"|"+SpecsPrinted[i]+makestring(" ",lengths[i][0]-len(SpecsPrinted[i]))
+    if mode == 0:
+        jump = True
+        execflag = 0
+    if jump == False:
+        played = []
+        #2) Get from config, what should be printed
+        #In the MTFconfig module all operations on the config are defined. getconfigpart(dir,cfg)
+        #retuns a list corresponting to cfg.
+        pSpecs = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "SpecsToPrint")
+        sSpecs = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "SpecsToShow")
+        NLen = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "MaxNameLen")
+        #find maximal length of printed specs
+        lengths = []
+        for spec in pSpecs:
+            #print spec
+            tmplen = findmaxSpeclen(DB,idlist,spec)
+            lengths.append(tmplen)
+        for i in range(len(pSpecs)):
+            if lengths[i][0] <= len(sSpecs[i]):
+                lengths[i][0] = len(sSpecs[i])
+        #print lengths
+        #3) Generate Header
+        header = ""
+        subheader = ""
+        for i in range(len(lengths)):
+            header = header + sSpecs[i]+makestring(" ",lengths[i][0]-len(sSpecs[i]))+makestring("|",1)
             subheader = subheader + makestring("-",lengths[i][0])+makestring("+",1)
-    print header
-    print subheader
-    #4) Print each entry with the in the config defined specs
-
-
+        print header
+        print subheader
+        #4) Print each entry with the in the config defined specs
+        for i in idlist:
+            tmpline = ""
+            for spec in pSpecs:
+                if spec == "ID":
+                    if int(DB.entrys[i].id) <= 9:
+                        tmpline = tmpline + makestring(" ",2) +str(DB.entrys[i].id)
+                    elif int(DB.entrys[i].id) <= 99 and int(DB.entrys[i].id) > 9:
+                        tmpline = tmpline + makestring(" ",1) +str(DB.entrys[i].id)
+                    elif int(DB.entrys[i].id) >= 100:
+                        tmpline = tmpline + str(DB.entrys[i].id)
+                elif spec == "NAME":
+                    name = DB.entrys[i].name
+                    if len(name) > NLen:
+                        tmpline = tmpline + name[0:NLen-2] + makestring(".",2)
+                    else:
+                        tmpline = tmpline + name + makestring(" ",NLen - len(name))
+                elif spec == "GENRE":
+                    for k in range(len(lengths)):
+                        if pSpecs[k] == "GENRE":
+                            maxlen = lengths[k][0]
+                    genrelist = []
+                    for genre in DB.entrys[i].genre:
+                        if genre != "nogenre":
+                            genrelist.append(genre)
+                    if len(genrelist) == 0:
+                            tmpline = tmpline + makestring(" ",maxlen)
+                    else:
+                        a1 = 0
+                        for genre in genrelist:
+                            a1 = a1 + len(genre + makestring(" ",1))
+                            tmpline = tmpline + genre + makestring(" ",1)
+                        tmpline = tmpline + makestring(" ",maxlen-a1)
+                    if a1 > maxlen:
+                        tmpline = tmpline[:-1]
+                elif spec == "INTERPRET":
+                    for k in range(len(lengths)):
+                        if pSpecs[k] == "INTERPRET":
+                            maxlen = lengths[k][0]
+                    interpretlist = []
+                    for interpret in DB.entrys[i].interpret:
+                        if interpret != "nointerpret":
+                            interpretlist.append(interpret)
+                    if len(interpretlist) == 0:
+                            tmpline = tmpline + makestring(" ",maxlen)
+                    else:
+                        a1 = 0
+                        for interpret in interpretlist:
+                            a1 = a1 + len(interpret.replace("%"," ") + makestring(" ",1))
+                            tmpline = tmpline + interpret.replace("%"," ") + makestring(" ",1)
+                        tmpline = tmpline + makestring(" ",maxlen-a1)
+                    if a1 > maxlen:
+                        tmpline = tmpline[:-1]
+                elif spec == "STUDIO":
+                    for k in range(len(lengths)):
+                        if pSpecs[k] == "STUDIO":
+                            maxlen = lengths[k][0]
+                    tmpline = tmpline + DB.entrys[i].studio + makestring(" ",maxlen - len(DB.entrys[i].studio))
+                elif spec == "NUMOPENED":
+                    for k in range(len(lengths)):
+                        if pSpecs[k] == "NUMOPENED":
+                            maxlen = lengths[k][0]
+                    tmpline = tmpline + DB.entrys[i].numopened + makestring(" ",maxlen - len(DB.entrys[i].numopened))
+                elif spec == "OPENED":
+                    for k in range(len(lengths)):
+                        if pSpecs[k] == "OPENED":
+                            maxlen = lengths[k][0]
+                    date = DB.entrys[i].opened
+                    if date == "neveropened":
+                        tmpline = tmpline + makestring(" ",maxlen)
+                    else:
+                        tmpline = tmpline + date[0:8] + makestring(" ",maxlen - len(date[0:8]))
+                tmpline = tmpline + makestring("|",1)
+            print tmpline
+    flag = True
+    while(execflag != 0):
+        execflag = intinput('Input Code (0 to go to mainmenu): ')
+        if execflag == 1:
+            execute(DB)
+        if execflag == 2:
+            modifyaentry(DB)
+        if execflag == 3:
+            advancedprinting(DB, "")
+#            flag = printaentry2(DB)
+        if execflag == 4:
+            #if criteriaprint == True:
+            ranid = executeranlist(DB, idlist, played)
+            played.append(ranid)
+            if len(played) == len(idlist):
+                played = []
+            #else:
+            #    executeranlist(DB, "all")
+        if execflag == 0:
+            return False
+        if flag == False:
+            break
 
 
 
@@ -868,7 +990,7 @@ def statisticsmode(DB):
 
 
 def main():
-    os.system("resize -s 43 140")
+    os.system("resize -s "+str(getheight())+" "+str(getwidth()))
     Code = 999
     DBexists = False
     ignore = False
@@ -913,14 +1035,14 @@ def main():
                 modifyaentry(DB)
             if Code == 3:
                 printaentry2(DB, False, None)
-            if Code == 4:
+            if Code == 9:
                 if criteriaprint == True:
                     executeranlist(DB, idlist)
                 else:
                     executeranlist(DB, "all")
             if Code == 5:
                 statisticsmode(DB)
-            if Code == 9:
+            if Code == 4:
                 advancedprinting(DB, "")
             if Code == 0:
                 print "Exiting!"

@@ -1,5 +1,5 @@
 #Collection of operations on the MTF config
-#2014, K Schweiger
+#2015, K Schweiger
 import os
 import sys
 import sharedfunctions
@@ -18,6 +18,10 @@ def configreader(workdir):
                 config.append(line[9::].split(","))
             elif line[0:11] == "numtoprint=":
                 config.append(int(line[11::]))
+            elif line[0:11] == "maxnamelen=":
+                config.append(int(line[11::]))
+            elif line[0:10] == "openedacc=":
+                config.append(line[10::])
     return config
 
 
@@ -29,3 +33,7 @@ def getconfigpart(workdir, cfg):
         return config[1]
     elif cfg == "NumToPrint":
         return config[2]
+    elif cfg == "MaxNameLen":
+        return config[3]
+    elif cfg == "DateAcc":
+        return config[4]
