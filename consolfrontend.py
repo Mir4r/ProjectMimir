@@ -44,7 +44,7 @@ def banner(database):
     print "-"+makestring(" ",7)+"  42 | Help                 | Get a few informations and help                                                                      -"
     print "-"+makestring(" ",7)+"  99 | DB options           | Options for modifieing the DB                                                                        -"
     print "-"+makestring(" ",getwidth()-2)+"-"
-    print "- "+str(database)+makestring(" ",getwidth()-14-len(database))+"MTF v0.5.0 -"
+    print "- "+str(database)+makestring(" ",getwidth()-14-len(database))+"MTF v0.5.1 -"
     print makestring("-",getwidth())
 
 def intinput(string):
@@ -92,7 +92,7 @@ def DBoptions(DB, DBexists, directory):
             raw_input('Input anything to go on')
     elif Code == 3:
         if DBexists == True:
-            removeentrys(DB)
+            removeentrys(DB,directory)
         else:
             print "There is no DB yet"
     elif Code == 4:
@@ -157,7 +157,7 @@ def findmaxSpeclen(DB, IDlist, specname):
         #if the spec is no list, just get lengths of the spec
         else:
             #print spec
-            tmplen = len(spec)
+            tmplen = len(str(spec))
             if specname == "NAME":
                 #print "hallo"
                 #print tmplen
@@ -517,7 +517,7 @@ def advancedprinting(DB, workdir):
     #   1.3) print by Dates
     if mode == 5 or mode == 6 or mode == 7:
         jump = False
-        numtoprint = MTFconfig.getconfigpart(workdir, "NumToPrint")
+        numtoprint = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "NumToPrint")
         if mode == 5:
             printby = "ADDED"
         if mode == 6:
@@ -605,13 +605,17 @@ def advancedprinting(DB, workdir):
                             a1 = a1 + len(interpret.replace("%"," ") + makestring(" ",1))
                             tmpline = tmpline + interpret.replace("%"," ") + makestring(" ",1)
                         tmpline = tmpline + makestring(" ",maxlen-a1)
-                    if a1 > maxlen:
-                        tmpline = tmpline[:-1]
+                        if a1 > maxlen:
+                            tmpline = tmpline[:-1]
                 elif spec == "STUDIO":
                     for k in range(len(lengths)):
                         if pSpecs[k] == "STUDIO":
                             maxlen = lengths[k][0]
-                    tmpline = tmpline + DB.entrys[i].studio + makestring(" ",maxlen - len(DB.entrys[i].studio))
+                    studio = DB.entrys[i].studio
+                    if studio != "nostudio":
+                        tmpline = tmpline + studio + makestring(" ",maxlen - len(studio))
+                    else:
+                        tmpline = tmpline + makestring(" ",maxlen)
                 elif spec == "NUMOPENED":
                     for k in range(len(lengths)):
                         if pSpecs[k] == "NUMOPENED":
@@ -839,10 +843,14 @@ def modifyaentry(DB):
         raw_input('Invalid Mode. Press key to continue')
 
 
-def removeentrys(DB):
+def removeentrys(DB,directory):
     print "Seaching for noexisting Files in the Database and searches for new Files in the filesystem."
+    returnedlist = DB.removeentrys()
     DB.removeentrys()
-    DB.removeentrys()
+    idlist = returnedlist[0]
+    candidates = returnedlist[1]
+    for i in range(len(idlist)):
+        specautoset(DB,idlist[i],candidates[i],directory)
     execflag = 1
     flag = True
     while(execflag != 0):
@@ -859,6 +867,47 @@ def removeentrys(DB):
             return False
         if flag == False:
             break
+
+
+def specautoset(DB,addedid,candidates,directory):
+    secondaryDBs = DB.readsecondaryDB(directory)
+    genreDB = secondaryDBs[0]
+    interpretDB = secondaryDBs[1]
+    studioDB = secondaryDBs[2]
+    #print candidates
+    allcandidates = []
+    for cl in candidates:
+        if len(cl) > 0:
+            allcandidates = allcandidates + cl
+    gennew = True
+    intnew = True
+    first = True
+    for cand in allcandidates:
+        if first:
+            print "Found some candidates in the filename for: "+str(addedid)
+            first = False
+        if cand in genreDB:
+            doit = raw_input("Should "+cand+" be added as Genre? Yes/No: ")
+            if doit == "Yes":
+                if gennew:
+                    changehow = "NEW"
+                    gennew = False
+                else:
+                    changehow = "APPEND"
+                DB.modifyentry("GENRE", cand, addedid, None, changehow)
+        if cand in interpretDB:
+            doit = raw_input("Should "+cand+" be added as Interpret? Yes/No: ")
+            if doit == "Yes":
+                if intnew:
+                    changehow = "NEW"
+                    intnew = False
+                else:
+                    changehow = "APPEND"
+                DB.modifyentry("INTERPRET", cand.replace(" ","%"), addedid, None, changehow)
+        if cand in studioDB:
+            doit = raw_input("Should "+cand+" be added as Studio? Yes/No: ")
+            if doit == "Yes":
+                DB.modifyentry("STUDIO", cand, addedid)
 
 def statisticsmode(DB):
     print "What Statistic?"
@@ -1033,7 +1082,7 @@ def main():
                 execute(DB)
             if Code == 2:
                 modifyaentry(DB)
-            if Code == 3:
+            if Code == 9:
                 printaentry2(DB, False, None)
             if Code == 4:
                 if criteriaprint == True:
@@ -1042,7 +1091,7 @@ def main():
                     executeranlist(DB, "all")
             if Code == 5:
                 statisticsmode(DB)
-            if Code == 9:
+            if Code == 3:
                 advancedprinting(DB, "")
             if Code == 0:
                 print "Exiting!"

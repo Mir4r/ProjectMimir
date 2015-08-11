@@ -10,7 +10,7 @@ import missingspecs
 import colorprinting
 
 def getVersion():
-    return "v0.3.3"
+    return "v0.4.0"
 
 def getcurrentspecs():
     return ["GENRE","INTERPRET","STUDIO","RATED","OPENED","ADDED","NUMOPENED","LASTMOD"]
@@ -109,7 +109,9 @@ class database:
             self.tmp = self.tmp + 1
         #for i in range(len(self.entrys)):
         #    self.entrys[i].printentry()
-        self.newfile = self.findnewfiles(self.rootdir)
+        addedids = []
+        filespecs = []
+        self.newfile = self.findnewfiles(self.rootdir, addedids,filespecs)
         if self.newfile == False:
             #print "move"
             for j in range(len(self.entrys)):
@@ -118,6 +120,7 @@ class database:
                     self.entrys[-1].changeSpec("ID", j)
                     self.entrys.insert(j, self.entrys[-1])
                     del self.entrys[-1]
+        return [addedids,filespecs]
     def changedpaths(self, startdir):
         changedlistid = []
         changedlistpath = []
@@ -148,13 +151,14 @@ class database:
         #open file
         charset = sys.getfilesystemencoding()
         self.lines = []
+        subfolder = ".mimir/"
         #read file "main.db" in the starting directory (dirs[0])
         try:
-            open(os.path.join(directory, 'main.db'), 'r')
+            open(os.path.join(directory+subfolder, 'main.db'), 'r')
         except IOError:
             print "The Database does not exist"
             return False
-        with open(os.path.join(directory, 'main.db'), 'r') as f:
+        with open(os.path.join(directory+subfolder, 'main.db'), 'r') as f:
             self.input = f.read()
         #after this you have one sting with all lines seperatet by \n
         #so split it! -> self.lines is a list with the lines from the read file
@@ -179,9 +183,11 @@ class database:
                 print "Something went wrong for your modifing request of entry ",self.index
     #Method for saving the filelist
     def saveDB(self):
+        subfolder = ".mimir/"
+        self.secondaryDB()
         charset = sys.getfilesystemencoding()
         #write a file "fileslist" in the starting directory (dirs[0])
-        with open(os.path.join(self.dirs[0].decode(charset), 'main.db'), 'w+') as f:
+        with open(os.path.join(self.dirs[0].decode(charset)+subfolder, 'main.db'), 'w+') as f:
             for e in self.entrys:
                 write_items = f.write(''.join(e.listofelements()))
                 write_items = f.write("\n")
@@ -230,7 +236,7 @@ class database:
                 #self.entrys[i].printentry()
                 self.printlist.append(i)
         return self.printlist
-    def findnewfiles(self, startdir):
+    def findnewfiles(self, startdir, ids, foundspecs):
         self.dirs = self.dirfinder(startdir)
         self.insertedflag = False
         #filelist contains the paths to the files
@@ -255,11 +261,15 @@ class database:
                         print "Inserted with ID:",i
                         self.entrys.insert(i, entry(None,i,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "nogenre","nointerpret","nostudio","notrated","neveropened",gettime("datetime"),str(0),"nevermod"))
                         self.insertedflag = True
+                        foundspecs.append(self.findspecsbyfilename(os.path.splitext(os.path.basename(foundfile))[0], startdir))
+                        ids.append(i)
                         break
                 if self.insertedflag == False:
                     self.id = len(self.entrys)
                     self.entrys.append(entry(None,self.id,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "nogenre","nointerpret","nostudio","notrated","neveropened",gettime("datetime"),str(0),"nevermod"))
                     self.insertedflag = False
+                    foundspecs.append(self.findspecsbyfilename(os.path.splitext(os.path.basename(foundfile))[0], startdir))
+                    ids.append(self.id)
                     print "Appended with ID:",self.id
 #                return self.insertedflag
         return self.insertedflag
@@ -287,7 +297,81 @@ class database:
         #date = str(lt[2])+"."+str(lt[1])+"."+str(lt[0]-2000)
         self.entrys[idopened].changeSpec("OPENED",gettime("datetime"))
         self.entrys[idopened].changeSpec("NUMOPENED",None)
-
+    def secondaryDB(self):
+        subfolder = ".mimir/"
+        self.interpretlist = []
+        self.genrelist = []
+        self.studiolist = []
+        for i in range(len(self.entrys)):
+            self.tmpinterpret = self.entrys[i].getSpec("INTERPRET")
+            for interpret in self.tmpinterpret:
+                if interpret not in self.interpretlist:
+                    self.interpretlist.append(interpret)
+        for i in range(len(self.entrys)):
+            self.tmpgenre = self.entrys[i].getSpec("GENRE")
+            for genre in self.tmpgenre:
+                if genre not in self.genrelist:
+                    self.genrelist.append(genre)
+        for i in range(len(self.entrys)):
+            studio = self.entrys[i].getSpec("STUDIO")
+            if studio not in self.studiolist:
+                self.studiolist.append(studio)
+        print self.interpretlist
+        print self.genrelist
+        print self.studiolist
+        charset = sys.getfilesystemencoding()
+        #write a file "fileslist" in the starting directory (dirs[0])
+        with open(os.path.join(self.dirs[0].decode(charset)+subfolder, 'genres.db'), 'w+') as f:
+            for g in self.genrelist:
+                write_items = f.write(g)
+                write_items = f.write("\n")
+        with open(os.path.join(self.dirs[0].decode(charset)+subfolder, 'interprets.db'), 'w+') as f:
+            for g in self.interpretlist:
+                write_items = f.write(g.replace("%"," "))
+                write_items = f.write("\n")
+        with open(os.path.join(self.dirs[0].decode(charset)+subfolder, 'studios.db'), 'w+') as f:
+            for g in self.studiolist:
+                write_items = f.write(g)
+                write_items = f.write("\n")
+    def readsecondaryDB(self, directory):
+        charset = sys.getfilesystemencoding
+        DBs = ["genres.db","interprets.db","studios.db"]
+        secondaryDBs = []
+        subfolder = ".mimir/"
+        for i in range(3):
+            self.lines = []
+            #read file "main.db" in the starting directory (dirs[0])
+            try:
+                open(os.path.join(directory+subfolder, DBs[i]), 'r')
+            except IOError:
+                print "The secondaryDBs are not created yet"
+                return False
+            with open(os.path.join(directory+subfolder, DBs[i]), 'r') as f:
+                self.input = f.read()
+            #after this you have one sting with all lines seperatet by \n
+            #so split it! -> self.lines is a list with the lines from the read file
+            self.lines = self.input.split("\n")
+            self.lines.pop()
+            secondaryDBs.append(self.lines)
+        return secondaryDBs
+    def findspecsbyfilename(self, filename, directory):
+        secondaryDBs = self.readsecondaryDB(directory)
+        candidates = []
+        #fist seperate the filename in smaller strings, that could have a meaning
+        commonseparators = [",",".","_","-"]
+        for seperator in commonseparators:
+            filename = filename.replace(seperator," ")
+        filename = filename.lower()
+        parts = filename.split(" ") #contains the smaller strings
+        #print parts
+        for DB in secondaryDBs:
+            tmp = []
+            for element in DB:
+                for elem in element.split(" "):
+                    if elem.lower() in parts:
+                        tmp.append(element)
+            candidates.append(tmp)
+        return candidates
 
 class entry:
     def __init__(self, specs, ID=None, name=None, path=None, genre=None, interpret=None, studio=None, rating=None, opened=None, added=None, numopened=None, lastmod =None):

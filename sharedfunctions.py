@@ -27,8 +27,9 @@ def savefile(directory, filename, backupflag, dbflag):
 
 
 def backupfile(directory, filename):
+    subfolder = ".mimir/"
     print "Backing up file..."
-    os.system("cp "+os.path.join(directory, filename)+" "+os.path.join(directory,filename+"-"+gettime("date")+".backup"))
+    os.system("cp "+os.path.join(directory+subfolder, filename)+" "+os.path.join(directory+subfolder,filename+"-"+gettime("date")+".backup"))
 def removefile(path):
     print "Removing file: "+path
     flag = False
