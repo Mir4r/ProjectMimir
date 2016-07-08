@@ -1,5 +1,5 @@
 #Frontend for usage of Project Mimir in Terminal
-# MTF (MimirTerminalFrontend) v0.4.0
+# MTF (MimirTerminalFrontend) v0.5.4
 #2014-2015, K. Schweiger
 import backend
 import missingspecs
@@ -12,13 +12,27 @@ from operator import itemgetter
 import colorprinting
 import sys
 
+lastrun = -1
+
+def getlastrunentry():
+    global lastrun
+    if lastrun == -1:
+        print "No entry run in scope"
+        return -1
+    else:
+        return lastrun
+
+def setlastrunentry(entryid):
+    global lastrun
+    lastrun = entryid
+
 #define width of the terminal window
 def getwidth():
-    return 140
+    return MTFconfig.getconfigpart(os.path.expanduser("~")+"/Code/ProjectMimir/", "TerminalWidth")
 
 #define height of the terminal window
 def getheight():
-    return 43
+    return MTFconfig.getconfigpart(os.path.expanduser("~")+"/Code/ProjectMimir/", "TerminalHeight")
 
 #function, to generate a string of a LENGHTS, that contains only SYMBOL
 def makestring(symbol, lengths):
@@ -32,19 +46,19 @@ def banner(database):
     print makestring("-",(getwidth()/2)-11)+" Project Mimir "+backend.getVersion()+" "+makestring("-",(getwidth()/2)-11)
     print makestring("-",getwidth())
     print "-"+makestring(" ",getwidth()-2)+"-"
-    print "-"+makestring(" ",7)+"Code | Name                 | Comments                                                                                             -"
-    print "-"+makestring(" ",7)+"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++      -"
-    print "-"+makestring(" ",7)+"   0 | Exit                 |                                                                                                      -"
-    print "-"+makestring(" ",7)+"   1 | Execute              | Opens the selected Entry in an external Applicatiom                                                  -"
-    print "-"+makestring(" ",7)+"   2 | Modify               | Modify Name, Genres, Interprets, Studio and Rating. Genres and Interprets are Lists, so you          -"
-    print "-"+makestring(" ",12)+    " "+makestring(" ",22)+"| can Append and Modify Elements or overwrite the list                                                 -"
-    print "-"+makestring(" ",7)+"   3 | Print Information    | Prints the informations of a given entry (Input: ID)                                                 -"
-    print "-"+makestring(" ",7)+"   4 | Random !!!!          | Execute a Random Entry. If printed by criteria, execute one of these                                 -"
-    print "-"+makestring(" ",7)+"   5 | Statistics           | Choose between different statistics                                                                  -"
-    print "-"+makestring(" ",7)+"  42 | Help                 | Get a few informations and help                                                                      -"
-    print "-"+makestring(" ",7)+"  99 | DB options           | Options for modifieing the DB                                                                        -"
+    print "-"+makestring(" ",7)+"Code | Name                 | Comments                                                                                                       -"
+    print "-"+makestring(" ",7)+"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-"
+    print "-"+makestring(" ",7)+"   0 | Exit                 |                                                                                                                -"
+    print "-"+makestring(" ",7)+"   1 | Execute              | Opens the selected Entry in an external Applicatiom                                                            -"
+    print "-"+makestring(" ",7)+"   2 | Modify               | Modify Name, Genres, Interprets, Studio and Rating. Genres and Interprets are Lists, so you                    -"
+    print "-"+makestring(" ",12)+    " "+makestring(" ",22)+"| can Append and Modify Elements or overwrite the list                                                           -"
+    print "-"+makestring(" ",7)+"   3 | Print Information    | Prints the informations of a given entry (Input: ID)                                                           -"
+    print "-"+makestring(" ",7)+"   4 | Random !!!!          | Execute a Random Entry. If printed by criteria, execute one of these                                           -"
+    print "-"+makestring(" ",7)+"   5 | Statistics           | Choose between different statistics                                                                            -"
+    print "-"+makestring(" ",7)+"  42 | Help                 | Get a few informations and help                                                                                -"
+    print "-"+makestring(" ",7)+"  99 | DB options           | Options for modifieing the DB                                                                                  -"
     print "-"+makestring(" ",getwidth()-2)+"-"
-    print "- "+str(database)+makestring(" ",getwidth()-14-len(database))+"MTF v0.5.1 -"
+    print "- "+str(database)+makestring(" ",getwidth()-14-len(database))+"MTF v0.5.4 -"
     print makestring("-",getwidth())
 
 def intinput(string):
@@ -105,6 +119,7 @@ def DBoptions(DB, DBexists, directory):
         if DBexists == True:
             sharedfunctions.backupfile(directory, 'main.db')
             DB.saveDB()
+            time.sleep(2)
         else:
             print "There is no DB yet"
     elif Code == 6:
@@ -135,8 +150,8 @@ def findmaxSpeclen(DB, IDlist, specname):
     maxSpeclen = 0
     maxSinglelen = []
     maxlenid = 0
-    NLen = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "MaxNameLen")
-    DAcc = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "DateAcc")
+    NLen = MTFconfig.getconfigpart(os.path.expanduser("~")+"/Code/ProjectMimir/", "MaxNameLen")
+    DAcc = MTFconfig.getconfigpart(os.path.expanduser("~")+"/Code/ProjectMimir/", "DateAcc")
     for i in IDlist:
         tmpSinglelen = []
         spec = DB.entrys[i].getSpec(specname)
@@ -186,6 +201,7 @@ def execute(DB):
     print "Now playing:",DB.entrys[idtoexecute].getSpec("NAME")
     DB.runentry(idtoexecute)
     DB.entryopened(idtoexecute)
+    setlastrunentry(idtoexecute)
 
 def executeranlist(DB, idlist, played):
     if idlist == "all":
@@ -193,6 +209,7 @@ def executeranlist(DB, idlist, played):
         printaentry2(DB, True, idtoexecute)
         DB.runentry(idtoexecute)
         DB.entryopened(idtoexecute)
+        setlastrunentry(idtoexecute)
     else:
         playedflag = False
         while(playedflag == False):
@@ -202,6 +219,7 @@ def executeranlist(DB, idlist, played):
         printaentry2(DB, True, idlist[listentry])
         DB.runentry(idlist[listentry])
         DB.entryopened(idlist[listentry])
+        setlastrunentry(idlist[listentry])
         return listentry
 
 def searchnewfiles(DB):
@@ -480,20 +498,25 @@ def printaentry2(DB,execflag, execid = None):
         if flag == False:
             break
 
-def advancedprinting(DB, workdir):
+def advancedprinting(DB, workdir,jumpto = None, selection = None):
     execflag = 1
-    #Idea for the advanced printing function
-    #1) Define the id's to be printed
-    print "+---+--------------------------+"
-    print "| 1 | Single entry             |"
-    print "| 2 | Range of entrys          |"
-    print "| 3 | Print by criteria        |"
-    print "| 4 | Print all                |"
-    print "| 5 | Print by Date Added      |"
-    print "| 6 | Print by Date Modified   |"
-    print "| 7 | Print by Date Opened     |"
-    print "+---+--------------------------+"
-    mode = intinput('Choose Mode: ')
+    if jumpto is None:
+        #Idea for the advanced printing function
+        #1) Define the id's to be printed
+        print "+---+-------------------------------------+"
+        print "|  1 | Single entry                      |"
+        print "|  2 | Range of entrys                   |"
+        print "|  3 | Print by criteria                 |"
+        print "|  4 | Print all                         |"
+        print "|  5 | Print by Date Added               |"
+        print "|  6 | Print by Date Modified            |"
+        print "|  7 | Print by Date Opened              |"
+        print "| 71 | Print never opened entrys         |"
+        print "| 81 | Print all from last Interpret     |"
+        print "+---+------------------------------------+"
+        mode = intinput('Choose Mode: ')
+    else:
+        mode = jumpto
     #   1.1) Print single/range/all entrys
     if mode == 1 or mode == 2 or mode == 4:
         jump = False
@@ -510,14 +533,16 @@ def advancedprinting(DB, workdir):
     #   1.2) Print by criteria
     if mode == 3:
         jump = False
-        criterianum = intinput('Input the number of criteria: ')
-        criteriastr = raw_input('Type criteria seperated by spaces: ')
-        criterialist = criteriastr.split(" ")
+        if selection is None:
+            criteriastr = raw_input('Type criteria seperated by spaces: ')
+            criterialist = criteriastr.split(" ")
+        else:
+            criterialist = selection
         idlist =  DB.listbycriteria(criterialist)
     #   1.3) print by Dates
     if mode == 5 or mode == 6 or mode == 7:
         jump = False
-        numtoprint = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "NumToPrint")
+        numtoprint = MTFconfig.getconfigpart(os.path.expanduser("~")+"/Code/ProjectMimir/", "NumToPrint")
         if mode == 5:
             printby = "ADDED"
         if mode == 6:
@@ -525,6 +550,14 @@ def advancedprinting(DB, workdir):
         if mode == 7:
             printby = "OPENED"
         idlist = getentrysbydate(DB,printby,numtoprint)
+    if mode == 81:
+        print "Only available after first opened entry"
+        jump = True
+        execflag = 0
+        time.sleep(1)
+    if mode == 71:
+        jump = False
+        idlist = DB.getbytimesopened("0")
     if mode == 0:
         jump = True
         execflag = 0
@@ -533,9 +566,12 @@ def advancedprinting(DB, workdir):
         #2) Get from config, what should be printed
         #In the MTFconfig module all operations on the config are defined. getconfigpart(dir,cfg)
         #retuns a list corresponting to cfg.
-        pSpecs = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "SpecsToPrint")
-        sSpecs = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "SpecsToShow")
-        NLen = MTFconfig.getconfigpart("/home/korbi/Code/ProjectMimir/", "MaxNameLen")
+        pSpecs = MTFconfig.getconfigpart(os.path.expanduser("~")+"/Code/ProjectMimir/", "SpecsToPrint")
+        sSpecs = MTFconfig.getconfigpart(os.path.expanduser("~")+"/Code/ProjectMimir/", "SpecsToShow")
+        nLen = MTFconfig.getconfigpart(os.path.expanduser("~")+"/Code/ProjectMimir/", "MaxNameLen")
+        npGenres = MTFconfig.getconfigpart(os.path.expanduser("~")+"/Code/ProjectMimir/", "NumberofGenres")
+        gPriority = MTFconfig.getconfigpart(os.path.expanduser("~")+"/Code/ProjectMimir/","GenrePriority")
+        invGenres = MTFconfig.getconfigpart(os.path.expanduser("~")+"/Code/ProjectMimir/","InvisibleGenres")
         #find maximal length of printed specs
         lengths = []
         for spec in pSpecs:
@@ -560,17 +596,19 @@ def advancedprinting(DB, workdir):
             for spec in pSpecs:
                 if spec == "ID":
                     if int(DB.entrys[i].id) <= 9:
-                        tmpline = tmpline + makestring(" ",2) +str(DB.entrys[i].id)
+                        tmpline = tmpline + makestring(" ",3) +str(DB.entrys[i].id)
                     elif int(DB.entrys[i].id) <= 99 and int(DB.entrys[i].id) > 9:
+                        tmpline = tmpline + makestring(" ",2) +str(DB.entrys[i].id)
+                    elif int(DB.entrys[i].id) <= 999 and int(DB.entrys[i].id) > 99:
                         tmpline = tmpline + makestring(" ",1) +str(DB.entrys[i].id)
-                    elif int(DB.entrys[i].id) >= 100:
+                    elif int(DB.entrys[i].id) >= 1000:
                         tmpline = tmpline + str(DB.entrys[i].id)
                 elif spec == "NAME":
                     name = DB.entrys[i].name
-                    if len(name) > NLen:
-                        tmpline = tmpline + name[0:NLen-2] + makestring(".",2)
+                    if len(name) > nLen:
+                        tmpline = tmpline + name[0:nLen-2] + makestring(".",2)
                     else:
-                        tmpline = tmpline + name + makestring(" ",NLen - len(name))
+                        tmpline = tmpline + name + makestring(" ",nLen - len(name))
                 elif spec == "GENRE":
                     for k in range(len(lengths)):
                         if pSpecs[k] == "GENRE":
@@ -579,6 +617,17 @@ def advancedprinting(DB, workdir):
                     for genre in DB.entrys[i].genre:
                         if genre != "nogenre":
                             genrelist.append(genre)
+                    genrelist = sharedfunctions.getPrioritizedGeneres( gPriority, genrelist )
+                    for invG in invGenres:
+                        if invG in genrelist:
+                            genrelist.remove(invG)
+                    if len(genrelist) > npGenres:
+                        tmpge = ".."
+                    else:
+                        tmpge = None
+                    genrelist = genrelist[0:npGenres]
+                    if tmpge is not None:
+                        genrelist.append(tmpge)
                     if len(genrelist) == 0:
                             tmpline = tmpline + makestring(" ",maxlen)
                     else:
@@ -650,6 +699,9 @@ def advancedprinting(DB, workdir):
                 played = []
             #else:
             #    executeranlist(DB, "all")
+        if execflag == 81:
+            lastinterpret = DB.entrys[getlastrunentry()].interpret
+            advancedprinting(DB, "", 3, lastinterpret[0].split('%'))
         if execflag == 0:
             return False
         if flag == False:
@@ -844,7 +896,7 @@ def modifyaentry(DB):
 
 
 def removeentrys(DB,directory):
-    print "Seaching for noexisting Files in the Database and searches for new Files in the filesystem."
+    print "Seaching for noexisting Files in the Database and new Files in the filesystem."
     returnedlist = DB.removeentrys()
     DB.removeentrys()
     idlist = returnedlist[0]
@@ -887,27 +939,52 @@ def specautoset(DB,addedid,candidates,directory):
             print "Found some candidates in the filename for: "+str(addedid)
             first = False
         if cand in genreDB:
-            doit = raw_input("Should "+cand+" be added as Genre? Yes/No: ")
-            if doit == "Yes":
-                if gennew:
-                    changehow = "NEW"
-                    gennew = False
+            whileflag = False
+            while(whileflag == False):
+                doit = raw_input("Should "+cand+" be added as Genre? Yes/No: ")
+                if doit.lower() == "yes":
+                    whileflag = True
+                    if gennew:
+                        changehow = "NEW"
+                        gennew = False
+                    else:
+                        changehow = "APPEND"
+                    DB.modifyentry("GENRE", cand, addedid, None, changehow)
+                elif doit.lower() == "no":
+                    whileflag = True
+                    time.sleep(0.1)
                 else:
-                    changehow = "APPEND"
-                DB.modifyentry("GENRE", cand, addedid, None, changehow)
+                    print "Please enter Yes or No."
         if cand in interpretDB:
-            doit = raw_input("Should "+cand+" be added as Interpret? Yes/No: ")
-            if doit == "Yes":
-                if intnew:
-                    changehow = "NEW"
-                    intnew = False
+            print "neue Runde"
+            whileflag = False
+            while(whileflag == False):
+                doit = raw_input("Should "+cand+" be added as Interpret? Yes/No: ")
+                if doit.lower() == "yes":
+                    whileflag = True
+                    if intnew:
+                        changehow = "NEW"
+                        intnew = False
+                    else:
+                        changehow = "APPEND"
+                    DB.modifyentry("INTERPRET", cand.replace(" ","%"), addedid, None, changehow)
+                elif doit.lower() == "no":
+                    whileflag = True
+                    time.sleep(0.1)
                 else:
-                    changehow = "APPEND"
-                DB.modifyentry("INTERPRET", cand.replace(" ","%"), addedid, None, changehow)
+                    print "Please enter Yes or No."
         if cand in studioDB:
-            doit = raw_input("Should "+cand+" be added as Studio? Yes/No: ")
-            if doit == "Yes":
-                DB.modifyentry("STUDIO", cand, addedid)
+            whileflag = False
+            while(whileflag == False):
+                doit = raw_input("Should "+cand+" be added as Studio? Yes/No: ")
+                if doit == "Yes":
+                    whileflag = True
+                    DB.modifyentry("STUDIO", cand, addedid)
+                elif doit.lower() == "no":
+                    whileflag = True
+                    time.sleep(0.1)
+                else:
+                    print "Please enter Yes or No."
 
 def statisticsmode(DB):
     print "What Statistic?"
@@ -1088,7 +1165,8 @@ def main():
                 if criteriaprint == True:
                     executeranlist(DB, idlist)
                 else:
-                    executeranlist(DB, "all")
+                    executeranlist(DB, "all", None)
+                time.sleep(2)
             if Code == 5:
                 statisticsmode(DB)
             if Code == 3:

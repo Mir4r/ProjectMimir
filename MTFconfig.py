@@ -8,32 +8,54 @@ import sharedfunctions
 #0: A list with specs that should be printed
 def configreader(workdir):
     lines = sharedfunctions.readFile(workdir, 'MTF.cfg')
-    config = []
+    config = {}
     for line in lines:
         #ignore Lines beginning with # or nothing in it
+        #Define keys and seperators for config elements
+        configkeys = {"printspec="     : [",",  "str"],
+                      "showspec="      : [",",  "str"],
+                      "numtoprint="    : [None, "int"],
+                      "maxnamelen="    : [None, "int"],
+                      "openedacc="     : [None, "str"],
+                      "termwidth="     : [None, "int"],
+                      "termheight="    : [None, "int"],
+                      "nGenre="        : [None, "int"],
+                      "genrePriority=" : [",",  "str"],
+                      "invisibleGenre=": [",",  "str"]}
+        
         if len(line) > 0 and line[0] != "#":
-            if line[0:10] == "printspec=":
-                config.append(line[10::].split(","))
-            elif line[0:9] == "showspec=":
-                config.append(line[9::].split(","))
-            elif line[0:11] == "numtoprint=":
-                config.append(int(line[11::]))
-            elif line[0:11] == "maxnamelen=":
-                config.append(int(line[11::]))
-            elif line[0:10] == "openedacc=":
-                config.append(line[10::])
+            for key in configkeys:
+                if line.startswith(key):
+                    if configkeys[key][0] is not None:
+                        config.update({key : line[len(key)::].split(configkeys[key][0])})
+                    else:
+                        if configkeys[key][1] is "str":
+                            config.update({key : str(line[len(key)::])})
+                        elif configkeys[key][1] is "int":
+                            config.update({key : int(line[len(key)::])})
+
     return config
 
 
 def getconfigpart(workdir, cfg):
     config = configreader(workdir)
     if cfg == "SpecsToPrint":
-        return config[0]
+        return config["printspec="]
     elif cfg == "SpecsToShow":
-        return config[1]
+        return config["showspec="]
     elif cfg == "NumToPrint":
-        return config[2]
+        return config["numtoprint="]
     elif cfg == "MaxNameLen":
-        return config[3]
+        return config["maxnamelen="]
     elif cfg == "DateAcc":
-        return config[4]
+        return config["openedacc="]
+    elif cfg == "GenrePriority":
+        return config["genrePriority="]
+    elif cfg == "NumberofGenres":
+        return config["nGenre="]
+    elif cfg == "TerminalWidth":
+        return config["termwidth="]
+    elif cfg == "TerminalHeight":
+        return config["termheight="]
+    elif cfg == "InvisibleGenres":
+        return config["invisibleGenre="]

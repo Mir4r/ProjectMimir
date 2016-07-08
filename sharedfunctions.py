@@ -59,3 +59,14 @@ def gettime(flag):
     elif flag == "time":
         timeres = str(lt[3])+":"+str(lt[4])+":"+str(lt[5])
         return timeres
+
+
+def getPrioritizedGeneres(priorities, genreList):
+    sortedGenres = []
+    for prio in priorities:
+        for genre in genreList:
+            if prio == genre:
+                sortedGenres.append(genre) #copy genre to sorted list
+                genreList.remove(genre) #delete genre from unsorted list, to just append that in the end
+    sortedGenres = sortedGenres + genreList
+    return sortedGenres

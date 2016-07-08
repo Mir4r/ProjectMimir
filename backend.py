@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#2014-2015, Korbinian Schweiger
+#2014-2015, K. Schweiger
 
 
 import sys
@@ -10,7 +10,7 @@ import missingspecs
 import colorprinting
 
 def getVersion():
-    return "v0.4.0"
+    return "v0.4.1"
 
 def getcurrentspecs():
     return ["GENRE","INTERPRET","STUDIO","RATED","OPENED","ADDED","NUMOPENED","LASTMOD"]
@@ -236,6 +236,14 @@ class database:
                 #self.entrys[i].printentry()
                 self.printlist.append(i)
         return self.printlist
+    def getbytimesopened(self, nOpened):
+        self.printlist = []
+        for i in range(len(self.entrys)):
+            if self.entrys[i].getSpec("NUMOPENED") == nOpened:
+                self.printlist.append(i)
+        return self.printlist
+
+
     def findnewfiles(self, startdir, ids, foundspecs):
         self.dirs = self.dirfinder(startdir)
         self.insertedflag = False
@@ -261,14 +269,17 @@ class database:
                         print "Inserted with ID:",i
                         self.entrys.insert(i, entry(None,i,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "nogenre","nointerpret","nostudio","notrated","neveropened",gettime("datetime"),str(0),"nevermod"))
                         self.insertedflag = True
-                        foundspecs.append(self.findspecsbyfilename(os.path.splitext(os.path.basename(foundfile))[0], startdir))
+                        #print os.path.splitext(foundfile)
+                        #foundspecs.append(self.findspecsbyfilename(os.path.splitext(os.path.basename(foundfile))[0], startdir))
+                        foundspecs.append(self.findspecsbyfilename(os.path.splitext(foundfile)[0], startdir))
                         ids.append(i)
                         break
                 if self.insertedflag == False:
                     self.id = len(self.entrys)
                     self.entrys.append(entry(None,self.id,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "nogenre","nointerpret","nostudio","notrated","neveropened",gettime("datetime"),str(0),"nevermod"))
                     self.insertedflag = False
-                    foundspecs.append(self.findspecsbyfilename(os.path.splitext(os.path.basename(foundfile))[0], startdir))
+                    #foundspecs.append(self.findspecsbyfilename(os.path.splitext(os.path.basename(foundfile))[0], startdir))
+                    foundspecs.append(self.findspecsbyfilename(os.path.splitext(foundfile)[0], startdir))
                     ids.append(self.id)
                     print "Appended with ID:",self.id
 #                return self.insertedflag
@@ -316,9 +327,9 @@ class database:
             studio = self.entrys[i].getSpec("STUDIO")
             if studio not in self.studiolist:
                 self.studiolist.append(studio)
-        print self.interpretlist
-        print self.genrelist
-        print self.studiolist
+        #print self.interpretlist
+        #print self.genrelist
+        #print self.studiolist
         charset = sys.getfilesystemencoding()
         #write a file "fileslist" in the starting directory (dirs[0])
         with open(os.path.join(self.dirs[0].decode(charset)+subfolder, 'genres.db'), 'w+') as f:
@@ -358,7 +369,7 @@ class database:
         secondaryDBs = self.readsecondaryDB(directory)
         candidates = []
         #fist seperate the filename in smaller strings, that could have a meaning
-        commonseparators = [",",".","_","-"]
+        commonseparators = [",",".","_","-","/"]
         for seperator in commonseparators:
             filename = filename.replace(seperator," ")
         filename = filename.lower()
@@ -367,13 +378,15 @@ class database:
         for DB in secondaryDBs:
             tmp = []
             for element in DB:
+                if (element.replace(" ","")).lower() in parts:
+                    tmp.append(element)
                 for elem in element.split(" "):
                     if elem.lower() in parts:
                         tmp.append(element)
             candidates.append(tmp)
         return candidates
 
-class entry:
+class entry():
     def __init__(self, specs, ID=None, name=None, path=None, genre=None, interpret=None, studio=None, rating=None, opened=None, added=None, numopened=None, lastmod =None):
         if specs is None:
             self.genre = []
