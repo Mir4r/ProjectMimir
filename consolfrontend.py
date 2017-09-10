@@ -1,6 +1,6 @@
 #Frontend for usage of Project Mimir in Terminal
-# MTF (MimirTerminalFrontend) v0.5.4
-#2014-2015, K. Schweiger
+# MTF (MimirTerminalFrontend) v0.6
+#2014-2016, K. Schweiger
 import backend
 import missingspecs
 import os
@@ -17,7 +17,7 @@ lastrun = -1
 def getlastrunentry():
     global lastrun
     if lastrun == -1:
-        print "No entry run in scope"
+        #print "No entry run in scope"
         return -1
     else:
         return lastrun
@@ -58,7 +58,7 @@ def banner(database):
     print "-"+makestring(" ",7)+"  42 | Help                 | Get a few informations and help                                                                                -"
     print "-"+makestring(" ",7)+"  99 | DB options           | Options for modifieing the DB                                                                                  -"
     print "-"+makestring(" ",getwidth()-2)+"-"
-    print "- "+str(database)+makestring(" ",getwidth()-14-len(database))+"MTF v0.5.4 -"
+    print "- "+str(database)+makestring(" ",getwidth()-14-len(database))+"MTF v0.6.0 -"
     print makestring("-",getwidth())
 
 def intinput(string):
@@ -180,6 +180,8 @@ def findmaxSpeclen(DB, IDlist, specname):
             if specname == "OPENED":
                 if DAcc == "short":
                     tmplen = 8
+            if specname == "DURATION":
+                tmplen = 4
             #print tmplen
         #look if the spec is the longest
         if tmplen > maxSpeclen:
@@ -511,6 +513,7 @@ def advancedprinting(DB, workdir,jumpto = None, selection = None):
         print "|  5 | Print by Date Added               |"
         print "|  6 | Print by Date Modified            |"
         print "|  7 | Print by Date Opened              |"
+        print "|  8 | Print by Filename (or partial)    |"
         print "| 71 | Print never opened entrys         |"
         print "| 81 | Print all from last Interpret     |"
         print "+---+------------------------------------+"
@@ -550,11 +553,42 @@ def advancedprinting(DB, workdir,jumpto = None, selection = None):
         if mode == 7:
             printby = "OPENED"
         idlist = getentrysbydate(DB,printby,numtoprint)
+    if mode == 8:
+        jump = False
+        fname = raw_input("Type filename (or partial filename: ")
+        idlist = DB.listbyName(fname)
     if mode == 81:
-        print "Only available after first opened entry"
-        jump = True
-        execflag = 0
-        time.sleep(1)
+        lastintflag = getlastrunentry()
+        #lastinterpret = DB.entrys[getlastrunentry()].interpret
+        if lastintflag is -1:
+            print "Only available after first opened entry"
+            jump = True
+            time.sleep(1)
+        else:
+            lastinterpret = DB.entrys[getlastrunentry()].interpret
+            jump = False
+            print lastinterpret
+            if len(lastinterpret) == 1:
+                idlist =  DB.listbycriteria(lastinterpret[0].split("%"))
+            else:
+                liststr = ""
+                qstr  =""
+                for irpt in range(len(lastinterpret)):
+                    liststr = liststr + lastinterpret[irpt].replace("%"," ")
+                    qstr = qstr +"'" +str(irpt)+"'" + " for " + lastinterpret[irpt].replace("%"," ")
+                    if irpt != len(lastinterpret)-1 :
+                        liststr = liststr + " and "
+                        qstr = qstr + " or "
+                print "Last entry had multiple interprets: "+liststr
+                chooseint = raw_input("Type "+ qstr + " (default: 0): ")
+                try:
+                    chooseint = int(chooseint)
+                except ValueError:
+                    chooseint = 0
+                if chooseint >= len(lastinterpret):
+                    print "Input value too high. Default value is used"
+                    chooseint = 0
+                idlist =  DB.listbycriteria(lastinterpret[chooseint].split("%"))
     if mode == 71:
         jump = False
         idlist = DB.getbytimesopened("0")
@@ -577,14 +611,16 @@ def advancedprinting(DB, workdir,jumpto = None, selection = None):
         for spec in pSpecs:
             #print spec
             tmplen = findmaxSpeclen(DB,idlist,spec)
+            #print spec, tmplen
             lengths.append(tmplen)
         for i in range(len(pSpecs)):
             if lengths[i][0] <= len(sSpecs[i]):
                 lengths[i][0] = len(sSpecs[i])
+                #print pSpecs[i],sSpecs[i],lengths[i][0]
         #print lengths
         #3) Generate Header
-        header = ""
-        subheader = ""
+        header = " "
+        subheader = " "
         for i in range(len(lengths)):
             header = header + sSpecs[i]+makestring(" ",lengths[i][0]-len(sSpecs[i]))+makestring("|",1)
             subheader = subheader + makestring("-",lengths[i][0])+makestring("+",1)
@@ -628,10 +664,10 @@ def advancedprinting(DB, workdir,jumpto = None, selection = None):
                     genrelist = genrelist[0:npGenres]
                     if tmpge is not None:
                         genrelist.append(tmpge)
+                    a1 = 0
                     if len(genrelist) == 0:
                             tmpline = tmpline + makestring(" ",maxlen)
                     else:
-                        a1 = 0
                         for genre in genrelist:
                             a1 = a1 + len(genre + makestring(" ",1))
                             tmpline = tmpline + genre + makestring(" ",1)
@@ -679,6 +715,18 @@ def advancedprinting(DB, workdir,jumpto = None, selection = None):
                         tmpline = tmpline + makestring(" ",maxlen)
                     else:
                         tmpline = tmpline + date[0:8] + makestring(" ",maxlen - len(date[0:8]))
+                elif spec == "HEIGHT":
+                    for k in range(len(lengths)):
+                        if pSpecs[k] == "HEIGHT":
+                            maxlen = lengths[k][0]
+                    height = DB.entrys[i].height
+                    tmpline =tmpline + makestring(" ",maxlen-len(height)) + height
+                elif spec == "DURATION":
+                    for k in range(len(lengths)):
+                        if pSpecs[k] == "DURATION":
+                            maxlen = lengths[k][0]
+                    duration = DB.entrys[i].duration
+                    tmpline =tmpline + makestring(" ",maxlen-len(duration[1:5])) + duration[1:5]
                 tmpline = tmpline + makestring("|",1)
             print tmpline
     flag = True
@@ -699,9 +747,6 @@ def advancedprinting(DB, workdir,jumpto = None, selection = None):
                 played = []
             #else:
             #    executeranlist(DB, "all")
-        if execflag == 81:
-            lastinterpret = DB.entrys[getlastrunentry()].interpret
-            advancedprinting(DB, "", 3, lastinterpret[0].split('%'))
         if execflag == 0:
             return False
         if flag == False:
@@ -934,11 +979,11 @@ def specautoset(DB,addedid,candidates,directory):
     gennew = True
     intnew = True
     first = True
-    for cand in allcandidates:
+    for cand in set(allcandidates):
         if first:
-            print "Found some candidates in the filename for: "+str(addedid)
+            print colorprinting.blue("Found some candidates in the filename for: "+str(addedid))+" --> "+colorprinting.green(str(DB.entrys[addedid].getSpec("NAME")))
             first = False
-        if cand in genreDB:
+        if cand in set(genreDB):
             whileflag = False
             while(whileflag == False):
                 doit = raw_input("Should "+cand+" be added as Genre? Yes/No: ")
@@ -956,7 +1001,7 @@ def specautoset(DB,addedid,candidates,directory):
                 else:
                     print "Please enter Yes or No."
         if cand in interpretDB:
-            print "neue Runde"
+            #print "neue Runde"
             whileflag = False
             while(whileflag == False):
                 doit = raw_input("Should "+cand+" be added as Interpret? Yes/No: ")

@@ -8,12 +8,13 @@ from glob import glob
 import time
 import missingspecs
 import colorprinting
+from MTFMetadata import MetaDataReader
 
 def getVersion():
-    return "v0.4.1"
+    return "v0.5.0"
 
 def getcurrentspecs():
-    return ["GENRE","INTERPRET","STUDIO","RATED","OPENED","ADDED","NUMOPENED","LASTMOD"]
+    return ["GENRE","INTERPRET","STUDIO","RATED","OPENED","ADDED","NUMOPENED","LASTMOD","DURATION","WIDTH","HEIGHT"]
 
 def gettime(flag):
     lt = time.localtime()
@@ -43,7 +44,7 @@ def makestring(symbol, lengths):
     return string
 
 class database:
-    def __init__(self,flag,startdir):
+    def __init__(self,flag,startdir,DBFile=None):
         #lt = time.localtime()
         #date = str(lt[2])+"."+str(lt[1])+"."+str(lt[0]-2000)
         self.entrys = []
@@ -67,6 +68,17 @@ class database:
             self.worked = True
             self.dirs = [startdir]
             self.DBlines = self.readDB(startdir)
+            if self.DBlines != False:
+                for lines in self.DBlines:
+                    self.specs = []
+                    self.specs = lines.split(" ")
+                    self.entrys.append(entry(self.specs))
+            else:
+               self.worked = False
+        if flag == 2:
+            self.worked = True
+            self.dirs = [startdir]
+            self.DBlines = self.readDB(DBFile, True)
             if self.DBlines != False:
                 for lines in self.DBlines:
                     self.specs = []
@@ -146,20 +158,29 @@ class database:
                     returnlist.append([changedlistid[j],changedlistpath[j],self.filelist[i]])
         return returnlist
     #Read the Database file and returns a list of the lines in the file
-    def readDB(self, directory):
+    def readDB(self, directory, specificfile = None):
         print "ReadDB"
         #open file
         charset = sys.getfilesystemencoding()
         self.lines = []
         subfolder = ".mimir/"
+        print directory
+        print specificfile
         #read file "main.db" in the starting directory (dirs[0])
         try:
-            open(os.path.join(directory+subfolder, 'main.db'), 'r')
+            if specificfile is not None:
+                open(directory, 'r')
+            else:
+                open(os.path.join(directory+subfolder, 'main.db'), 'r')
         except IOError:
             print "The Database does not exist"
             return False
-        with open(os.path.join(directory+subfolder, 'main.db'), 'r') as f:
-            self.input = f.read()
+        if specificfile is not None:
+            with open(directory, 'r') as f:
+                self.input = f.read()
+        else:
+            with open(os.path.join(directory+subfolder, 'main.db'), 'r') as f:
+                self.input = f.read()
         #after this you have one sting with all lines seperatet by \n
         #so split it! -> self.lines is a list with the lines from the read file
         self.lines = self.input.split("\n")
@@ -236,14 +257,14 @@ class database:
                 #self.entrys[i].printentry()
                 self.printlist.append(i)
         return self.printlist
-    def getbytimesopened(self, nOpened):
+
+    def listbyName(self, name):
         self.printlist = []
         for i in range(len(self.entrys)):
-            if self.entrys[i].getSpec("NUMOPENED") == nOpened:
+            if name in self.entrys[i].getSpec("NAME"):
                 self.printlist.append(i)
         return self.printlist
-
-
+                
     def findnewfiles(self, startdir, ids, foundspecs):
         self.dirs = self.dirfinder(startdir)
         self.insertedflag = False
@@ -253,6 +274,7 @@ class database:
             self.filelist = self.filelist + self.getfiles(d)
         #print self.filelist
         print " "
+        reader = MetaDataReader()
         for foundfile in self.filelist:
             self.existflag = False
             for i in range(len(self.entrys)):
@@ -264,10 +286,12 @@ class database:
             if self.existflag == False:
                 print "foundfile",foundfile
                 self.insertedflag = False
+                
                 for i in range(len(self.entrys)):
                     if i != int(self.entrys[i].getSpec("ID")):
                         print "Inserted with ID:",i
-                        self.entrys.insert(i, entry(None,i,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "nogenre","nointerpret","nostudio","notrated","neveropened",gettime("datetime"),str(0),"nevermod"))
+                        meta = reader.GetMetaData(foundfile)
+                        self.entrys.insert(i, entry(None,i,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "nogenre","nointerpret","nostudio","notrated","neveropened",gettime("datetime"),str(0),"nevermod", meta["Duration"], meta["Resolution_W"], meta["Resolution_H"]))
                         self.insertedflag = True
                         #print os.path.splitext(foundfile)
                         #foundspecs.append(self.findspecsbyfilename(os.path.splitext(os.path.basename(foundfile))[0], startdir))
@@ -276,7 +300,8 @@ class database:
                         break
                 if self.insertedflag == False:
                     self.id = len(self.entrys)
-                    self.entrys.append(entry(None,self.id,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "nogenre","nointerpret","nostudio","notrated","neveropened",gettime("datetime"),str(0),"nevermod"))
+                    meta = reader.GetMetaData(foundfile)
+                    self.entrys.append(entry(None,self.id,os.path.splitext(os.path.basename(foundfile))[0], foundfile, "nogenre","nointerpret","nostudio","notrated","neveropened",gettime("datetime"),str(0),"nevermod", meta["Duration"], meta["Resolution_W"], meta["Resolution_H"]))
                     self.insertedflag = False
                     #foundspecs.append(self.findspecsbyfilename(os.path.splitext(os.path.basename(foundfile))[0], startdir))
                     foundspecs.append(self.findspecsbyfilename(os.path.splitext(foundfile)[0], startdir))
@@ -286,8 +311,6 @@ class database:
         return self.insertedflag
     def runentry(self, entryid):
         os.system("vlc -q --one-instance "+str(self.entrys[entryid].getSpec("PATH"))+" 2> /dev/null &")
-    def getnumberofentrys(self):
-        return len(self.entrys)
     def sortentrys(self):
         self.pathlist = []
         self.tmpentrys = []
@@ -385,9 +408,56 @@ class database:
                         tmp.append(element)
             candidates.append(tmp)
         return candidates
+    #Functions for probing Databases
+    def getnumberofentrys(self):
+        return len(self.entrys)
+    def getbytimesopened(self, nOpened):
+        self.printlist = []
+        for i in range(len(self.entrys)):
+            if self.entrys[i].getSpec("NUMOPENED") == nOpened:
+                self.printlist.append(i)
+        return self.printlist
+    def getListofSpecs( self, Specs = [] ):
+        output = {}
+        if "GENRE" in Specs:
+            genreDic = {}
+        if "STUDIO" in Specs:
+            studioDic = {}
+        if "INTERPRET" in Specs:
+            interpretDic = {}
+        for i in range(0,len(self.entrys)):
+            if "GENRE" in Specs:
+                tmpgenre = self.entrys[i].getSpec("GENRE")
+                for genre in tmpgenre:
+                    if genreDic.has_key(genre):
+                        genreDic[genre] = genreDic[genre] + 1
+                    else:
+                        genreDic[genre] = 1
+            if "STUDIO" in Specs:
+                studio = self.entrys[i].getSpec("STUDIO")
+                if studioDic.has_key(studio):
+                    studioDic[studio] = studioDic[studio] + 1
+                else:
+                    studioDic[studio] = 1
+            if "INTERPRET" in Specs:
+                tmpinterpret = self.entrys[i].getSpec("INTERPRET")
+                for interpret in tmpinterpret:
+                    interpret = interpret.replace('%',' ')
+                    if interpretDic.has_key(interpret):
+                        interpretDic[interpret] = interpretDic[interpret] + 1
+                    else:
+                        interpretDic[interpret] = 1
+        if "GENRE" in Specs:
+            output["GENRE"] = genreDic
+        if "STUDIO" in Specs:
+            output["STUDIO"] = studioDic
+        if "INTERPRET" in Specs:
+            output["INTERPRET"] = interpretDic
+        return output
 
+            
 class entry():
-    def __init__(self, specs, ID=None, name=None, path=None, genre=None, interpret=None, studio=None, rating=None, opened=None, added=None, numopened=None, lastmod =None):
+    def __init__(self, specs, ID=None, name=None, path=None, genre=None, interpret=None, studio=None, rating=None, opened=None, added=None, numopened=None, lastmod =None, duration=None, width=None, height=None):
         if specs is None:
             self.genre = []
             self.interpret = []
@@ -402,6 +472,9 @@ class entry():
             self.added=added
             self.numopened=numopened
             self.lastmod=lastmod
+            self.duration=duration
+            self.width=width
+            self.height=height
         else:
             self.genre = []
             self.interpret = []
@@ -429,6 +502,13 @@ class entry():
                     self.numopened = self.spec[1]
                 if self.spec[0] == "LASTMOD":
                     self.lastmod = self.spec[1]
+                if self.spec[0] == "DURATION":
+                    self.duration = self.spec[1]
+                if self.spec[0] == "WIDTH":
+                    self.width = self.spec[1]
+                if self.spec[0] == "HEIGHT":
+                    self.height = self.spec[1]
+                    
     def changeSpec(self, what, newSpec, how = None, listnum = None):
         if what == "ID":
             self.id = newSpec
@@ -493,6 +573,15 @@ class entry():
         if what == "LASTMOD":
             self.lastmod = newSpec
             return True
+        if what == "DURATION":
+            self.duration = newSpec
+            return True
+        if what == "WIDTH":
+            self.width = newSpec
+            return True
+        if what == "HEIGHT":
+            self.height = newSpec
+            return True
         #if given what is no calid option, report error
         else:
             return False
@@ -519,8 +608,15 @@ class entry():
             return self.numopened
         if what == "LASTMOD$" or what == "LASTMOD":
             return self.lastmod
+        if what == "DURATION$" or what == "DURATION":
+            return self.duration
+        if what == "WIDTH$" or what == "WIDTH":
+            return self.width
+        if what == "HEIGHT$" or what == "HEIGHT":
+            return self.height
+
     def listofelements(self):
-        self.loopelem = ["ID$","NAME$","PATH$","GENRE$","INTERPRET$","STUDIO$","RATING$","OPENED$","ADDED$","NUMOPENED$","LASTMOD$"]
+        self.loopelem = ["ID$","NAME$","PATH$","GENRE$","INTERPRET$","STUDIO$","RATING$","OPENED$","ADDED$","NUMOPENED$","LASTMOD$","DURATION$","WIDTH$","HEIGHT$"]
         self.entrylist = []
         for elem in self.loopelem:
             if type(self.getSpec(elem)) is list:
@@ -538,6 +634,7 @@ class entry():
                 self.entrylist.append(" ")
         #self.entrylist = [str(self.__id),self.name,self.__path,]+self.genre+self.interpret
         #self.entrylist = [str(self.__id),self.name,self.__path,self.genre,self.interpret]
+        #print self.entrylist
         return self.entrylist
     """
     #Old CODE

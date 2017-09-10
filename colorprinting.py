@@ -10,11 +10,10 @@ def disable():
     ENDC = ''
 
 def red ( msg):
-    return RED + msg + ENDC
+    return RED + str(msg) + ENDC
 
 def green( msg):
-    return GREEN + msg + ENDC
+    return GREEN + str(msg) + ENDC
 
 def blue( msg):
-    return BLUE + msg + ENDC
-
+    return BLUE + str(msg) + ENDC

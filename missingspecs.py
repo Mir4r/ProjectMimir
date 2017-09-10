@@ -7,7 +7,9 @@ import sys
 import backend
 
 def addspec(name, value, workdir):
+    print workdir
     lines = readDB(workdir)
+    print lines
     for i in range(len(lines)):
         print lines[i]
         lines[i] = lines[i] + name +"$"+value+" "
@@ -20,11 +22,11 @@ def readDB(directory):
     lines = []
     #read file "main.db" in the starting directory (dirs[0])
     try:
-        open(os.path.join(directory, 'main.db'), 'r')
+        open(os.path.join(directory+'.mimir/', 'main.db'), 'r')
     except IOError:
         print "The Database does not exist"
         return False
-    with open(os.path.join(directory, 'main.db'), 'r') as f:
+    with open(os.path.join(directory+'.mimir/', 'main.db'), 'r') as f:
         input = f.read()
     #after this you have one sting with all lines seperatet by \
     #so split it! -> self.lines is a list with the lines from the read file
@@ -34,7 +36,7 @@ def readDB(directory):
 
 def saveDB(workdir, lines):
     charset = sys.getfilesystemencoding()
-    with open(os.path.join(workdir, 'main.db'), 'w+') as f:
+    with open(os.path.join(workdir+'.mimir/', 'main.db'), 'w+') as f:
         for line in lines:
             write_items = f.write(line)
             write_items = f.write("\n")
